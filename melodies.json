@@ -1,0 +1,31 @@
+[
+    {
+        "id": "petzold-minuet-g",
+        "title": "Minuet in G",
+        "composer": "Christian Petzold",
+        "file": "petzold_v1_test.musicxml"
+    },
+
+    {
+        "id": "vivaldi_spring",
+        "title": "Primavera in D",
+        "composer": "Antonio Vivaldi",
+        "file": "Vivaldi_Spring.musicxml"
+    },
+
+    {
+        "id": "limelight",
+        "title": "Limelight",
+        "composer": "Charlie Chaplin",
+        "file": "Limelight_1.musicxml"
+    
+    },
+
+    {
+        "id": "Elvira_madigan",
+        "title": "Andante Concerto 21",
+        "composer": "Wolfgang Amadeus Mozart",
+        "file": "Mozart_Andante_467.musicxml"
+    }
+
+]

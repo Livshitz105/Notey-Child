@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Little Music Reader – Puzzle</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        #score {
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        #puzzleArea {
+            display: none;
+            margin-top: 30px;
+        }
+
+        #pieces {
+            display: flex;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .measurePiece {
+            width: 360px;
+            height: 220px;
+
+            border: 4px solid #888;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            cursor: pointer;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+        }
+
+        .measurePiece.selected {
+            border-color: red;
+        }
+
+        .measurePiece > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        #puzzleMessage {
+            font-size: 40px;
+            margin-top: 40px;
+            min-height: 60px;
+        }
+
+        /* Normal score */
+        #score g.note {
+            fill: black;
+        }
+
+        #score g.note.playing {
+            fill: red;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1>Little Music Reader</h1>
+
+    <label for="melodySelector">Melody:</label>
+    <select id="melodySelector"></select>
+
+    <br><br>
+
+    <button id="playButton">PLAY</button>
+    <button id="stopButton">■ Stop</button>
+    <button id="puzzleButton">PUZZLE</button>
+
+
+    <div id="score">
+        Loading music...
+    </div>
+
+
+    <div id="puzzleArea">
+
+        <h2>Put the music in the right order</h2>
+
+        <p>
+            Click one piece, then click another piece to swap them.
+        </p>
+
+        <div id="pieces"></div>
+
+        <br>
+
+        <button id="checkButton">CHECK</button>
+        <button id="playPuzzleButton">PLAY PUZZLE</button>
+        <button id="backButton">BACK TO MUSIC</button>
+
+        <div id="puzzleMessage"></div>
+
+    </div>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            window.originalMusicXML = null;
+            window.selectedPiece = null;
+
+
+            /*
+             * =================================================
+             * LOAD A MELODY (used both on startup and whenever
+             * the dropdown selection changes)
+             * =================================================
+             */
+
+            function loadMelody(toolkit, entry) {
+
+                document.getElementById("score").innerHTML =
+                    "Loading music...";
+
+                return MusicEngine.loadMusicXML(entry.file)
+                    .then(function (musicXML) {
+
+                        window.originalMusicXML = musicXML;
+
+                        MusicEngine.renderScore(toolkit, musicXML, "score");
+
+                        console.log("Loaded:", entry.title);
+
+                        /*
+                         * If the puzzle is open when the melody
+                         * changes, rebuild it for the new piece
+                         * instead of leaving the old one showing.
+                         */
+                        window.selectedPiece = null;
+
+                        document.getElementById("puzzleMessage")
+                            .textContent = "";
+
+                        const puzzleIsOpen =
+                            document.getElementById("puzzleArea")
+                                .style.display === "block";
+
+                        if (puzzleIsOpen) {
+                            createPuzzle();
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the music.</p>";
+
+                    });
+
+            }
+
+
+            /*
+             * =================================================
+             * LOAD THE MELODY CATALOG AND POPULATE THE DROPDOWN
+             * =================================================
+             */
+
+            MusicEngine.ready(function (toolkit) {
+
+                /*
+                 * Highlight notes red as they play. This only
+                 * needs to be set up once - it always reflects
+                 * whatever piece is currently loaded into this
+                 * same toolkit, so it keeps working correctly
+                 * even after switching melodies.
+                 */
+                MusicEngine.attachHighlighting(toolkit);
+
+
+                MusicEngine.loadCatalog("melodies.json")
+                    .then(function (melodies) {
+
+                        const selector =
+                            document.getElementById("melodySelector");
+
+                        melodies.forEach(function (entry, index) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = index;
+
+                            option.textContent =
+                                entry.title +
+                                (entry.composer ? " – " + entry.composer : "");
+
+                            selector.appendChild(option);
+
+                        });
+
+                        selector.addEventListener("change", function () {
+
+                            loadMelody(
+                                toolkit,
+                                melodies[Number(selector.value)]
+                            );
+
+                        });
+
+                        /*
+                         * Load the first melody in the catalog
+                         * automatically on startup.
+                         */
+                        if (melodies.length > 0) {
+                            loadMelody(toolkit, melodies[0]);
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the melody catalog.</p>";
+
+                    });
+
+
+                /*
+                 * PLAY
+                 */
+                document.getElementById("playButton")
+                    .addEventListener("click", function () {
+                        MusicEngine.playMIDI(toolkit);
+                    });
+
+
+                /*
+                 * STOP
+                 */
+                document.getElementById("stopButton")
+                    .addEventListener("click", function () {
+                        MusicEngine.stopMIDI();
+                    });
+
+
+                /*
+                 * PLAY PUZZLE
+                 *
+                 * Play the music in the current puzzle order.
+                 */
+                document.getElementById("playPuzzleButton")
+                    .addEventListener("click", function () {
+
+                        const pieces =
+                            Array.from(
+                                document.querySelectorAll(".measurePiece")
+                            );
+
+                        const currentOrder =
+                            pieces.map(function (piece) {
+                                return Number(piece.dataset.measure);
+                            });
+
+                        console.log("Playing puzzle order:", currentOrder);
+
+                        const reorderedXML =
+                            MusicEngine.makeReorderedMusicXML(
+                                window.originalMusicXML,
+                                currentOrder
+                            );
+
+                        MusicEngine.playMusicXML(reorderedXML);
+
+                    });
+
+            });
+
+
+            /*
+             * =================================================
+             * PUZZLE BUTTON
+             * =================================================
+             */
+
+            document.getElementById("puzzleButton")
+                .addEventListener("click", function () {
+
+                    document.getElementById("score").style.display = "none";
+                    document.getElementById("puzzleArea").style.display = "block";
+                    document.getElementById("puzzleMessage").textContent = "";
+
+                    createPuzzle();
+
+                });
+
+
+            /*
+             * =================================================
+             * SCRAMBLE HELPER
+             * =================================================
+             *
+             * Returns [1, 2, ..., count] shuffled into a random
+             * order that is NOT already the correct order (that
+             * would make for a pretty boring puzzle).
+             */
+
+            function shuffledMeasureOrder(count) {
+
+                const order = [];
+
+                for (let i = 1; i <= count; i++) {
+                    order.push(i);
+                }
+
+                const solved = order.join(",");
+
+                let attempts = 0;
+
+                do {
+
+                    for (let i = order.length - 1; i > 0; i--) {
+
+                        const j = Math.floor(Math.random() * (i + 1));
+
+                        const temp = order[i];
+                        order[i] = order[j];
+                        order[j] = temp;
+
+                    }
+
+                    attempts++;
+
+                } while (order.join(",") === solved && attempts < 20);
+
+                return order;
+
+            }
+
+
+            /*
+             * =================================================
+             * CREATE PUZZLE
+             * =================================================
+             */
+
+            function createPuzzle() {
+
+                const container = document.getElementById("pieces");
+
+                container.innerHTML = "";
+
+                if (!window.originalMusicXML) {
+
+                    document.getElementById("puzzleMessage").textContent =
+                        "The music is still loading.";
+
+                    return;
+
+                }
+
+                const measureCount =
+                    MusicEngine.countMeasures(window.originalMusicXML);
+
+                if (measureCount < 2) {
+
+                    document.getElementById("puzzleMessage").textContent =
+                        "This melody is too short for a puzzle.";
+
+                    return;
+
+                }
+
+                const order = shuffledMeasureOrder(measureCount);
+
+                /*
+                 * Build every piece's mini-XML first...
+                 */
+                const miniXMLList = order.map(function (measureNumber) {
+
+                    try {
+                        return MusicEngine.makeMiniMusicXML(
+                            window.originalMusicXML,
+                            measureNumber
+                        );
+                    }
+                    catch (error) {
+                        console.error(
+                            "Error preparing measure", measureNumber, error
+                        );
+                        return null;
+                    }
+
+                });
+
+                /*
+                 * ...then render them all together, at one shared
+                 * scale, so every piece shows notation at the same
+                 * physical size regardless of how sparse or dense
+                 * its content is.
+                 */
+                const miniSVGList =
+                    MusicEngine.renderMiniMeasureSet(miniXMLList);
+
+                order.forEach(function (measureNumber, index) {
+
+                    const piece = document.createElement("div");
+
+                    piece.className = "measurePiece";
+                    piece.dataset.measure = measureNumber;
+
+                    if (miniSVGList[index]) {
+                        piece.innerHTML = miniSVGList[index];
+                    }
+                    else {
+                        piece.textContent = "Measure " + measureNumber;
+                    }
+
+                    piece.addEventListener("click", function () {
+                        pieceClicked(piece);
+                    });
+
+                    container.appendChild(piece);
+
+                });
+
+            }
+
+
+            /*
+             * =================================================
+             * SELECT / SWAP
+             * =================================================
+             */
+
+            function pieceClicked(piece) {
+
+                /*
+                 * First click.
+                 */
+                if (window.selectedPiece === null) {
+
+                    window.selectedPiece = piece;
+
+                    piece.classList.add("selected");
+
+                    document.getElementById("puzzleMessage").textContent =
+                        "Now choose another piece.";
+
+                    return;
+
+                }
+
+                /*
+                 * Same piece = cancel.
+                 */
+                if (window.selectedPiece === piece) {
+
+                    piece.classList.remove("selected");
+
+                    window.selectedPiece = null;
+
+                    document.getElementById("puzzleMessage").textContent = "";
+
+                    return;
+
+                }
+
+                /*
+                 * Swap.
+                 */
+                const container = document.getElementById("pieces");
+
+                const allPieces = Array.from(container.children);
+
+                const firstIndex = allPieces.indexOf(window.selectedPiece);
+                const secondIndex = allPieces.indexOf(piece);
+
+                const newOrder = allPieces.slice();
+
+                newOrder[firstIndex] = piece;
+                newOrder[secondIndex] = window.selectedPiece;
+
+                newOrder.forEach(function (p) {
+                    container.appendChild(p);
+                });
+
+                window.selectedPiece.classList.remove("selected");
+                window.selectedPiece = null;
+
+                document.getElementById("puzzleMessage").textContent =
+                    "Swapped!";
+
+            }
+
+
+            /*
+             * =================================================
+             * CHECK
+             * =================================================
+             */
+
+            document.getElementById("checkButton")
+                .addEventListener("click", function () {
+
+                    const pieces =
+                        Array.from(
+                            document.getElementById("pieces").children
+                        );
+
+                    const numbers =
+                        pieces.map(function (piece) {
+                            return Number(piece.dataset.measure);
+                        });
+
+                    const correctOrder = [];
+
+                    for (let i = 1; i <= numbers.length; i++) {
+                        correctOrder.push(i);
+                    }
+
+                    const correct =
+                        numbers.join(",") === correctOrder.join(",");
+
+                    document.getElementById("puzzleMessage").textContent =
+                        correct
+                            ? "Yes! That is the melody!"
+                            : "Wanna try one more time?";
+
+                });
+
+
+            /*
+             * =================================================
+             * BACK TO MUSIC
+             * =================================================
+             */
+
+            document.getElementById("backButton")
+                .addEventListener("click", function () {
+
+                    document.getElementById("puzzleArea").style.display = "none";
+                    document.getElementById("score").style.display = "block";
+
+                });
+
+        });
+
+    </script>
+
+</body>
+
+</html>

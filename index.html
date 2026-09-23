@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Little Music Reader</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+        }
+
+        #score {
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        /* Normal notation */
+        #score g.note {
+            fill: black;
+        }
+
+        /* Note currently being played */
+        #score g.note.playing {
+            fill: red;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Little Music Reader</h1>
+
+    <label for="melodySelector">Melody:</label>
+    <select id="melodySelector"></select>
+
+    <br><br>
+
+    <button id="playButton">PLAY</button>
+    <button id="stopButton">■ Stop</button>
+
+    <div id="score">Loading music...</div>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            function loadMelody(toolkit, entry) {
+
+                document.getElementById("score").innerHTML =
+                    "Loading music...";
+
+                return MusicEngine.loadMusicXML(entry.file)
+                    .then(function (musicXML) {
+
+                        window.originalMusicXML = musicXML;
+
+                        MusicEngine.renderScore(toolkit, musicXML, "score");
+
+                        MusicEngine.attachHighlighting(toolkit);
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the music.</p>";
+
+                    });
+
+            }
+
+
+            MusicEngine.ready(function (toolkit) {
+
+                MusicEngine.loadCatalog("melodies.json")
+                    .then(function (melodies) {
+
+                        const selector =
+                            document.getElementById("melodySelector");
+
+                        melodies.forEach(function (entry, index) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = index;
+
+                            option.textContent =
+                                entry.title +
+                                (entry.composer ? " – " + entry.composer : "");
+
+                            selector.appendChild(option);
+
+                        });
+
+                        selector.addEventListener("change", function () {
+
+                            loadMelody(
+                                toolkit,
+                                melodies[Number(selector.value)]
+                            );
+
+                        });
+
+                        if (melodies.length > 0) {
+                            loadMelody(toolkit, melodies[0]);
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the melody catalog.</p>";
+
+                    });
+
+
+                document.getElementById("playButton")
+                    .addEventListener("click", function () {
+                        MusicEngine.playMIDI(toolkit);
+                    });
+
+
+                document.getElementById("stopButton")
+                    .addEventListener("click", function () {
+                        MusicEngine.stopMIDI();
+                    });
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>
