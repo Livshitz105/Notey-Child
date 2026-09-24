@@ -26,6 +26,20 @@
         "title": "Andante Concerto 21",
         "composer": "Wolfgang Amadeus Mozart",
         "file": "Mozart_Andante_467.musicxml"
+    },
+
+    {
+        "id": "Pchelka",
+        "title": "Pchelka Klaridskaya",
+        "composer": "Vladimir Dashkevich",
+        "file": "clavicord_Dash.musicxml"
+    },
+
+    {
+       "id": "Silent_night",
+       "title": "Silent Night",
+       "composer": "Franz Gruber",
+       "file": "silent_night.musicxml" 
     }
 
 ]
