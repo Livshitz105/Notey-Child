@@ -1,0 +1,23 @@
+[
+    {
+        "id": "demo-listen-choose-1",
+        "title": "Which notation matches what you hear?",
+        "variants": [
+            {
+                "label": "A",
+                "file": "demo_listen_correct.musicxml",
+                "correct": true
+            },
+            {
+                "label": "B",
+                "file": "demo_listen_wrong_pitch.musicxml",
+                "correct": false
+            },
+            {
+                "label": "C",
+                "file": "demo_listen_wrong_rhythm.musicxml",
+                "correct": false
+            }
+        ]
+    }
+]

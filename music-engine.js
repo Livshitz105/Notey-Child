@@ -451,13 +451,23 @@ window.MusicEngine = (function () {
      */
 
     /*
-     * Renders a single mini measure, but stops short of scaling
+     * Renders a single music snippet, but stops short of scaling
      * it to a final size - that happens later, once we know the
-     * dimensions of every piece in the puzzle (see
+     * dimensions of every snippet in the set (see
      * renderMiniMeasureSet below). Returns null if something
-     * goes wrong (e.g. a malformed measure).
+     * goes wrong (e.g. malformed XML).
+     *
+     * anchorSelector picks what gets kept and cropped around:
+     *   - "g.measure" (the default) for a single isolated
+     *     measure, like a puzzle piece.
+     *   - "g.system" for a short multi-measure phrase (a whole
+     *     line of music) - e.g. a notation variant in the
+     *     "listen and choose" activity, which usually needs to
+     *     show more than one measure.
      */
-    function prepareMiniMeasure(miniXML) {
+    function prepareMiniMeasure(miniXML, anchorSelector) {
+
+        const selector = anchorSelector || "g.measure";
 
         const miniToolkit = new verovio.toolkit();
 
@@ -482,9 +492,9 @@ window.MusicEngine = (function () {
         miniToolkit.loadData(miniXML);
 
         /*
-         * Render the one-measure score. No layout options here
-         * anymore - the layout was already done above, using
-         * the options that were actually applied.
+         * Render the snippet. No layout options here anymore -
+         * the layout was already done above, using the options
+         * that were actually applied.
          */
         const svgString = miniToolkit.renderToSVG(1, {});
 
@@ -503,11 +513,13 @@ window.MusicEngine = (function () {
 
         const svg = temp.querySelector("svg");
 
-        const measure = svg.querySelector("g.measure");
+        const measure = svg.querySelector(selector);
 
         if (!measure) {
 
-            console.error("Could not find the measure in the SVG.");
+            console.error(
+                "Could not find \"" + selector + "\" in the SVG."
+            );
 
             document.body.removeChild(temp);
 
@@ -620,20 +632,24 @@ window.MusicEngine = (function () {
     /*
      * Renders every mini measure needed for one puzzle, all at
      * the SAME scale. Pass an array of miniXML strings (one per
-     * puzzle piece); get back an array of finished SVG strings
-     * in the same order (entries can be null if a measure failed
-     * to render). This is what createPuzzle() should call,
-     * instead of rendering each piece independently.
+     * puzzle piece, or one per notation variant); get back an
+     * array of finished SVG strings in the same order (entries
+     * can be null if a snippet failed to render).
+     *
+     * anchorSelector is passed straight through to
+     * prepareMiniMeasure - use "g.measure" (the default) for
+     * single isolated measures, or "g.system" for multi-measure
+     * phrases.
      */
-    function renderMiniMeasureSet(miniXMLList) {
+    function renderMiniMeasureSet(miniXMLList, anchorSelector) {
 
         const prepared = miniXMLList.map(function (xml) {
 
             try {
-                return prepareMiniMeasure(xml);
+                return prepareMiniMeasure(xml, anchorSelector);
             }
             catch (error) {
-                console.error("Error preparing a puzzle piece:", error);
+                console.error("Error preparing a snippet:", error);
                 return null;
             }
 

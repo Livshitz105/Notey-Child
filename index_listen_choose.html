@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Little Music Reader – Listen and Choose</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        #taskSelector {
+            font-size: 18px;
+            padding: 6px 10px;
+            min-width: 320px;
+        }
+
+        #variants {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .variantTile {
+            width: 360px;
+            height: 220px;
+
+            border: 4px solid #888;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            cursor: pointer;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+        }
+
+        .variantTile > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .variantTile.correctTile {
+            border-color: #2e9e44;
+        }
+
+        .variantTile.wrongTile {
+            border-color: #d0392b;
+        }
+
+        .variantTile.disabledTile {
+            cursor: default;
+            opacity: 0.85;
+        }
+
+        #choiceMessage {
+            font-size: 32px;
+            margin-top: 30px;
+            min-height: 50px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1>Little Music Reader</h1>
+
+    <label for="taskSelector">Exercise:</label>
+    <select id="taskSelector"></select>
+
+    <br><br>
+
+    <button id="playButton">▶ PLAY</button>
+    <button id="stopButton">■ Stop</button>
+
+    <p>Listen, then click the notation that matches what you heard.</p>
+
+    <div id="variants">Loading exercise...</div>
+
+    <div id="choiceMessage"></div>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            let currentTask = null;
+
+
+            /*
+             * =================================================
+             * LOAD ONE EXERCISE
+             * =================================================
+             */
+
+            function loadTask(task) {
+
+                currentTask = task;
+                currentTask.correctXML = null;
+
+                document.getElementById("choiceMessage").textContent = "";
+
+                const container = document.getElementById("variants");
+
+                container.innerHTML = "Loading exercise...";
+
+                const filePromises =
+                    task.variants.map(function (variant) {
+                        return MusicEngine.loadMusicXML(variant.file);
+                    });
+
+                Promise.all(filePromises)
+                    .then(function (xmlList) {
+
+                        /*
+                         * "g.system" instead of "g.measure" -
+                         * a variant may be more than one measure
+                         * long, so we crop around the whole line
+                         * of music, not just its first measure.
+                         */
+                        const svgList =
+                            MusicEngine.renderMiniMeasureSet(
+                                xmlList, "g.system"
+                            );
+
+                        container.innerHTML = "";
+
+                        task.variants.forEach(function (variant, index) {
+
+                            const tile =
+                                document.createElement("div");
+
+                            tile.className = "variantTile";
+
+                            if (svgList[index]) {
+                                tile.innerHTML = svgList[index];
+                            }
+                            else {
+                                tile.textContent =
+                                    variant.label ||
+                                    ("Option " + (index + 1));
+                            }
+
+                            if (variant.correct) {
+                                currentTask.correctXML = xmlList[index];
+                            }
+
+                            tile.addEventListener("click", function () {
+                                choiceClicked(tile, variant);
+                            });
+
+                            container.appendChild(tile);
+
+                        });
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        container.innerHTML =
+                            "<p>Could not load this exercise.</p>";
+
+                    });
+
+            }
+
+
+            /*
+             * =================================================
+             * HANDLE A CHOICE
+             * =================================================
+             */
+
+            function choiceClicked(tile, variant) {
+
+                if (tile.classList.contains("disabledTile")) {
+                    return;
+                }
+
+                if (variant.correct) {
+
+                    tile.classList.add("correctTile", "disabledTile");
+
+                    /*
+                     * Lock the whole exercise once it's solved.
+                     */
+                    document
+                        .querySelectorAll(".variantTile")
+                        .forEach(function (t) {
+                            t.classList.add("disabledTile");
+                        });
+
+                    document.getElementById("choiceMessage").textContent =
+                        "Yes! That's the one.";
+
+                }
+                else {
+
+                    tile.classList.add("wrongTile", "disabledTile");
+
+                    document.getElementById("choiceMessage").textContent =
+                        "Not quite - listen again and try another.";
+
+                }
+
+            }
+
+
+            /*
+             * =================================================
+             * PLAY / STOP
+             * =================================================
+             */
+
+            document.getElementById("playButton")
+                .addEventListener("click", function () {
+
+                    if (currentTask && currentTask.correctXML) {
+                        MusicEngine.playMusicXML(currentTask.correctXML);
+                    }
+
+                });
+
+            document.getElementById("stopButton")
+                .addEventListener("click", function () {
+                    MusicEngine.stopMIDI();
+                });
+
+
+            /*
+             * =================================================
+             * LOAD THE EXERCISE CATALOG
+             * =================================================
+             */
+
+            MusicEngine.ready(function () {
+
+                MusicEngine.loadCatalog("listening-tasks.json")
+                    .then(function (tasks) {
+
+                        const selector =
+                            document.getElementById("taskSelector");
+
+                        tasks.forEach(function (task, index) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = index;
+                            option.textContent = task.title;
+
+                            selector.appendChild(option);
+
+                        });
+
+                        selector.addEventListener("change", function () {
+                            loadTask(tasks[Number(selector.value)]);
+                        });
+
+                        if (tasks.length > 0) {
+                            loadTask(tasks[0]);
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("variants").innerHTML =
+                            "<p>Could not load the exercise catalog.</p>";
+
+                    });
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>

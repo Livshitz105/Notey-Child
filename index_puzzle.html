@@ -33,6 +33,12 @@
             margin-bottom: 10px;
         }
 
+        #melodySelector {
+            font-size: 18px;
+            padding: 6px 10px;
+            min-width: 320px;
+        }
+
         #score {
             max-width: 1000px;
             margin-top: 30px;
@@ -50,6 +56,8 @@
         }
 
         .measurePiece {
+            position: relative;
+
             width: 360px;
             height: 220px;
 
@@ -62,21 +70,61 @@
             align-items: center;
             justify-content: center;
 
-            cursor: pointer;
+            cursor: grab;
 
             box-sizing: border-box;
 
             overflow: hidden;
+
+            /*
+             * Stop the browser's own touch scrolling/panning from
+             * fighting with our own drag handling on touchscreens.
+             */
+            touch-action: none;
+
+            /*
+             * Don't let dragging select the text/notation as if
+             * it were a text selection.
+             */
+            user-select: none;
         }
 
-        .measurePiece.selected {
-            border-color: red;
+        .measurePiece.dragging {
+            cursor: grabbing;
+            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+            opacity: 0.9;
         }
 
         .measurePiece > svg {
             width: 100%;
             height: 100%;
             display: block;
+        }
+
+        .playPieceButton {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+
+            width: 36px;
+            height: 36px;
+
+            border-radius: 50%;
+            border: none;
+
+            background: #4a90d9;
+            color: white;
+
+            font-size: 16px;
+            line-height: 36px;
+            padding: 0;
+            margin: 0;
+
+            cursor: pointer;
+        }
+
+        .playPieceButton:hover {
+            background: #3a7bc0;
         }
 
         #puzzleMessage {
@@ -123,7 +171,7 @@
         <h2>Put the music in the right order</h2>
 
         <p>
-            Click one piece, then click another piece to swap them.
+            Drag a piece to move it to a new position.
         </p>
 
         <div id="pieces"></div>
@@ -144,7 +192,6 @@
         document.addEventListener("DOMContentLoaded", function () {
 
             window.originalMusicXML = null;
-            window.selectedPiece = null;
 
 
             /*
@@ -173,8 +220,6 @@
                          * changes, rebuild it for the new piece
                          * instead of leaving the old one showing.
                          */
-                        window.selectedPiece = null;
-
                         document.getElementById("puzzleMessage")
                             .textContent = "";
 
@@ -456,9 +501,37 @@
                         piece.textContent = "Measure " + measureNumber;
                     }
 
-                    piece.addEventListener("click", function () {
-                        pieceClicked(piece);
-                    });
+                    makeDraggable(piece);
+
+                    /*
+                     * A small play button on each piece, so a
+                     * child can hear how that one piece sounds
+                     * before deciding where it goes. stopPropagation
+                     * keeps this click from also triggering the
+                     * tile's own click handler (which selects the
+                     * piece for swapping).
+                     */
+                    if (miniXMLList[index]) {
+
+                        const playButton =
+                            document.createElement("button");
+
+                        playButton.className = "playPieceButton";
+                        playButton.type = "button";
+                        playButton.title = "Play this piece";
+                        playButton.textContent = "▶";
+
+                        playButton.addEventListener("click", function (event) {
+
+                            event.stopPropagation();
+
+                            MusicEngine.playMusicXML(miniXMLList[index]);
+
+                        });
+
+                        piece.appendChild(playButton);
+
+                    }
 
                     container.appendChild(piece);
 
@@ -469,67 +542,139 @@
 
             /*
              * =================================================
-             * SELECT / SWAP
+             * DRAG AND DROP (using Pointer Events, not the native
+             * HTML5 drag-and-drop API - native drag-and-drop is
+             * unreliable on touchscreens/tablets, while Pointer
+             * Events work consistently for mouse, touch, and pen)
              * =================================================
              */
 
-            function pieceClicked(piece) {
+            let dragState = null;
 
-                /*
-                 * First click.
-                 */
-                if (window.selectedPiece === null) {
+            function makeDraggable(piece) {
 
-                    window.selectedPiece = piece;
+                piece.addEventListener("pointerdown", function (event) {
 
-                    piece.classList.add("selected");
+                    /*
+                     * Don't start a drag when the little play
+                     * button was pressed - let its own click
+                     * handler take over instead.
+                     */
+                    if (event.target.closest(".playPieceButton")) {
+                        return;
+                    }
 
-                    document.getElementById("puzzleMessage").textContent =
-                        "Now choose another piece.";
+                    event.preventDefault();
 
-                    return;
+                    const rect = piece.getBoundingClientRect();
 
-                }
+                    dragState = {
+                        piece: piece,
+                        grabOffsetX: event.clientX - rect.left,
+                        grabOffsetY: event.clientY - rect.top
+                    };
 
-                /*
-                 * Same piece = cancel.
-                 */
-                if (window.selectedPiece === piece) {
+                    piece.setPointerCapture(event.pointerId);
 
-                    piece.classList.remove("selected");
+                    piece.classList.add("dragging");
 
-                    window.selectedPiece = null;
-
-                    document.getElementById("puzzleMessage").textContent = "";
-
-                    return;
-
-                }
-
-                /*
-                 * Swap.
-                 */
-                const container = document.getElementById("pieces");
-
-                const allPieces = Array.from(container.children);
-
-                const firstIndex = allPieces.indexOf(window.selectedPiece);
-                const secondIndex = allPieces.indexOf(piece);
-
-                const newOrder = allPieces.slice();
-
-                newOrder[firstIndex] = piece;
-                newOrder[secondIndex] = window.selectedPiece;
-
-                newOrder.forEach(function (p) {
-                    container.appendChild(p);
                 });
 
-                window.selectedPiece.classList.remove("selected");
-                window.selectedPiece = null;
+                piece.addEventListener("pointermove", function (event) {
 
-                document.getElementById("puzzleMessage").textContent =
-                    "Swapped!";
+                    if (!dragState || dragState.piece !== piece) {
+                        return;
+                    }
+
+                    /*
+                     * Temporarily ignore this piece for hit-testing,
+                     * so we can see whichever OTHER piece is under
+                     * the pointer right now.
+                     */
+                    piece.style.pointerEvents = "none";
+
+                    const hoverTarget =
+                        document.elementFromPoint(
+                            event.clientX, event.clientY
+                        );
+
+                    piece.style.pointerEvents = "";
+
+                    const targetPiece =
+                        hoverTarget
+                            ? hoverTarget.closest(".measurePiece")
+                            : null;
+
+                    /*
+                     * Live-reorder: as the dragged piece passes the
+                     * midpoint of another piece, slot it in before
+                     * or after that piece.
+                     */
+                    if (targetPiece && targetPiece !== piece) {
+
+                        const container =
+                            document.getElementById("pieces");
+
+                        const targetRect =
+                            targetPiece.getBoundingClientRect();
+
+                        const midpoint =
+                            targetRect.left + targetRect.width / 2;
+
+                        if (event.clientX < midpoint) {
+                            container.insertBefore(piece, targetPiece);
+                        }
+                        else {
+                            container.insertBefore(
+                                piece, targetPiece.nextSibling
+                            );
+                        }
+
+                    }
+
+                    /*
+                     * Recompute the piece's natural (in-flow)
+                     * position AFTER any reordering above, then
+                     * offset it so it stays attached to the same
+                     * point on the cursor, with no visual jump.
+                     */
+                    piece.style.transform = "none";
+
+                    const naturalRect = piece.getBoundingClientRect();
+
+                    const dx =
+                        event.clientX - dragState.grabOffsetX -
+                        naturalRect.left;
+
+                    const dy =
+                        event.clientY - dragState.grabOffsetY -
+                        naturalRect.top;
+
+                    piece.style.transform =
+                        "translate(" + dx + "px, " + dy + "px)";
+
+                });
+
+                function endDrag(event) {
+
+                    if (!dragState || dragState.piece !== piece) {
+                        return;
+                    }
+
+                    piece.releasePointerCapture(event.pointerId);
+
+                    piece.classList.remove("dragging");
+                    piece.style.transform = "";
+
+                    dragState = null;
+
+                    document.getElementById("puzzleMessage").textContent =
+                        "";
+
+                }
+
+                piece.addEventListener("pointerup", endDrag);
+                piece.addEventListener("pointercancel", endDrag);
 
             }
 
