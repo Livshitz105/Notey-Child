@@ -444,10 +444,10 @@
 
                 }
 
-                const measureCount =
+                const totalMeasures =
                     MusicEngine.countMeasures(window.originalMusicXML);
 
-                if (measureCount < 2) {
+                if (totalMeasures < 2) {
 
                     document.getElementById("puzzleMessage").textContent =
                         "This melody is too short for a puzzle.";
@@ -456,7 +456,28 @@
 
                 }
 
+                /*
+                 * Cap how many pieces the puzzle ever shows. Past
+                 * a certain point, a piece is too small to read
+                 * comfortably and the row becomes unmanageable
+                 * (a 20-measure piece would mean 20 tiny tiles).
+                 * If the melody is longer than this, only its
+                 * first MAX_PUZZLE_PIECES measures are used.
+                 */
+                const MAX_PUZZLE_PIECES = 8;
+
+                const measureCount =
+                    Math.min(totalMeasures, MAX_PUZZLE_PIECES);
+
                 const order = shuffledMeasureOrder(measureCount);
+
+                if (totalMeasures > measureCount) {
+
+                    document.getElementById("puzzleMessage").textContent =
+                        "Using the first " + measureCount +
+                        " of " + totalMeasures + " measures.";
+
+                }
 
                 /*
                  * Build every piece's mini-XML first...
