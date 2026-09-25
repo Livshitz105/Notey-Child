@@ -19,5 +19,37 @@
                 "correct": false
             }
         ]
+    },
+
+    { "id": "dash-1measure", 
+      "title": "Which notation matches what you hear?", 
+      "variants": [ 
+        { 
+            "label": "A", 
+            "file": "dash_1measure_correct.musicxml", 
+            "correct": true 
+            
+        }, 
+        { 
+            "label": "B", 
+            "file": "dash_1measure_wrong1.musicxml", 
+            "correct": false 
+            
+        }, 
+        
+        { 
+            "label": "C", 
+            "file": "dash_1measure_wrong2.musicxml", 
+            "correct": false 
+        }, 
+            
+        { 
+            "label": "D", 
+            "file": "dash_1measure_wrong3.musicxml", 
+            "correct": false 
+        
+        } 
+        
+        ] 
     }
 ]
