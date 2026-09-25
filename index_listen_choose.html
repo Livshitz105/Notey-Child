@@ -47,6 +47,8 @@
         }
 
         .variantTile {
+            position: relative;
+
             width: 360px;
             height: 220px;
 
@@ -83,6 +85,32 @@
         .variantTile.disabledTile {
             cursor: default;
             opacity: 0.85;
+        }
+
+        .playPieceButton {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+
+            width: 36px;
+            height: 36px;
+
+            border-radius: 50%;
+            border: none;
+
+            background: #4a90d9;
+            color: white;
+
+            font-size: 16px;
+            line-height: 36px;
+            padding: 0;
+            margin: 0;
+
+            cursor: pointer;
+        }
+
+        .playPieceButton:hover {
+            background: #3a7bc0;
         }
 
         #choiceMessage {
@@ -183,6 +211,42 @@
                             tile.addEventListener("click", function () {
                                 choiceClicked(tile, variant);
                             });
+
+                            /*
+                             * Let a child listen to what THIS
+                             * option actually sounds like, and
+                             * compare it to what PLAY (the target)
+                             * played - not just judge by eye.
+                             * stopPropagation keeps this from also
+                             * triggering the tile's own click
+                             * (which registers a choice/guess).
+                             */
+                            if (xmlList[index]) {
+
+                                const playButton =
+                                    document.createElement("button");
+
+                                playButton.className = "playPieceButton";
+                                playButton.type = "button";
+                                playButton.title = "Play this option";
+                                playButton.textContent = "▶";
+
+                                playButton.addEventListener(
+                                    "click",
+                                    function (event) {
+
+                                        event.stopPropagation();
+
+                                        MusicEngine.playMusicXML(
+                                            xmlList[index]
+                                        );
+
+                                    }
+                                );
+
+                                tile.appendChild(playButton);
+
+                            }
 
                             container.appendChild(tile);
 
