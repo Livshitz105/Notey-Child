@@ -149,6 +149,38 @@
 
             let currentTask = null;
 
+            /*
+             * How long to show "Yes! That's the one." before
+             * automatically resetting for another go, without
+             * needing a page refresh.
+             */
+            const AUTO_RESET_DELAY_MS = 2200;
+
+
+            /*
+             * Returns a shuffled COPY of an array - the original
+             * is left untouched, so re-loading the same exercise
+             * later reshuffles fresh rather than compounding a
+             * previous shuffle.
+             */
+            function shuffledCopy(array) {
+
+                const copy = array.slice();
+
+                for (let i = copy.length - 1; i > 0; i--) {
+
+                    const j = Math.floor(Math.random() * (i + 1));
+
+                    const temp = copy[i];
+                    copy[i] = copy[j];
+                    copy[j] = temp;
+
+                }
+
+                return copy;
+
+            }
+
 
             /*
              * =================================================
@@ -167,8 +199,17 @@
 
                 container.innerHTML = "Loading exercise...";
 
+                /*
+                 * Shuffle the display order every time - otherwise
+                 * the correct answer would always be whichever
+                 * position it happens to sit at in the JSON file
+                 * (usually first, since that's the natural way to
+                 * author it).
+                 */
+                const shuffledVariants = shuffledCopy(task.variants);
+
                 const filePromises =
-                    task.variants.map(function (variant) {
+                    shuffledVariants.map(function (variant) {
                         return MusicEngine.loadMusicXML(variant.file);
                     });
 
@@ -188,7 +229,7 @@
 
                         container.innerHTML = "";
 
-                        task.variants.forEach(function (variant, index) {
+                        shuffledVariants.forEach(function (variant, index) {
 
                             const tile =
                                 document.createElement("div");
@@ -209,7 +250,7 @@
                             }
 
                             tile.addEventListener("click", function () {
-                                choiceClicked(tile, variant);
+                                choiceClicked(tile, variant, task);
                             });
 
                             /*
@@ -271,7 +312,7 @@
              * =================================================
              */
 
-            function choiceClicked(tile, variant) {
+            function choiceClicked(tile, variant, task) {
 
                 if (tile.classList.contains("disabledTile")) {
                     return;
@@ -292,6 +333,24 @@
 
                     document.getElementById("choiceMessage").textContent =
                         "Yes! That's the one.";
+
+                    /*
+                     * Automatically reset back to a fresh,
+                     * reshuffled round of the SAME exercise after
+                     * a short pause, so the next attempt doesn't
+                     * need a page refresh. The currentTask check
+                     * guards against a rare race: if the person
+                     * switches to a different exercise via the
+                     * dropdown during this pause, don't clobber
+                     * whatever they've since switched to.
+                     */
+                    setTimeout(function () {
+
+                        if (currentTask === task) {
+                            loadTask(task);
+                        }
+
+                    }, AUTO_RESET_DELAY_MS);
 
                 }
                 else {

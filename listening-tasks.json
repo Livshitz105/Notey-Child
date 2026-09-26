@@ -1,7 +1,7 @@
 [
     {
         "id": "demo-listen-choose-1",
-        "title": "Which notation matches what you hear?",
+        "title": "Guess the correct notation_1",
         "variants": [
             {
                 "label": "A",
@@ -22,7 +22,7 @@
     },
 
     { "id": "dash-1measure", 
-      "title": "Which notation matches what you hear?", 
+      "title": "Guess the correct notation_2", 
       "variants": [ 
         { 
             "label": "A", 
@@ -49,6 +49,45 @@
             "correct": false 
         
         } 
+        
+        ] 
+    },
+
+    { "id": "mozart_klar", 
+      "title": "Guess the correct notation_3", 
+      "variants": [ 
+        { 
+            "label": "A", 
+            "file": "mozart_klar.musicxml", 
+            "correct": true 
+            
+        }, 
+        { 
+            "label": "B", 
+            "file": "mozart_klar_wrong1.musicxml", 
+            "correct": false 
+            
+        }, 
+        
+        { 
+            "label": "C", 
+            "file": "mozart_klar_wrong2.musicxml", 
+            "correct": false 
+        }, 
+            
+        { 
+            "label": "D", 
+            "file": "mozart_klar_wrong3.musicxml", 
+            "correct": false 
+        
+        },
+        
+        {
+
+            "label": "E", 
+            "file": "mozart_klar_wrong4.musicxml", 
+            "correct": false 
+        }
         
         ] 
     }
