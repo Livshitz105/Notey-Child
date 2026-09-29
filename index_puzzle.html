@@ -401,14 +401,35 @@
             document.getElementById("puzzleButton")
                 .addEventListener("click", function () {
 
+                    const puzzleArea =
+                        document.getElementById("puzzleArea");
+
+                    /*
+                     * If a puzzle is already in progress, PUZZLE
+                     * just needs to bring it back into view - NOT
+                     * rebuild it from scratch (that would throw
+                     * away whatever arrangement the player was
+                     * already working on, e.g. after peeking at
+                     * the melody and clicking PUZZLE again out of
+                     * habit).
+                     */
+                    const alreadyInProgress =
+                        puzzleArea.style.display === "block";
+
                     document.getElementById("score").style.display = "none";
-                    document.getElementById("puzzleArea").style.display = "block";
-                    document.getElementById("puzzleMessage").textContent = "";
+                    puzzleArea.style.display = "block";
 
                     document.getElementById("toggleMelodyButton")
                         .textContent = "🎵 Show Melody";
 
-                    createPuzzle();
+                    if (!alreadyInProgress) {
+
+                        document.getElementById("puzzleMessage")
+                            .textContent = "";
+
+                        createPuzzle();
+
+                    }
 
                 });
 
