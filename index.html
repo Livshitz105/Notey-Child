@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Little Music Reader</title>
+    <title>Notey Child — a little music reader</title>
 
     <!-- Verovio -->
     <script
@@ -29,6 +29,24 @@
             font-size: 18px;
             padding: 8px 16px;
             margin-right: 8px;
+        }
+
+        /*
+         * Make the main PLAY button stand out from the rest -
+         * it's the button people reach for most.
+         */
+        #playButton {
+            background: #2e9e44;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 12px 28px;
+        }
+
+        #playButton:hover {
+            background: #257a37;
         }
 
         #melodySelector {
@@ -56,7 +74,7 @@
 
 <body>
 
-    <h1>Little Music Reader</h1>
+    <h1>Notey Child — a little music reader</h1>
 
     <label for="melodySelector">Melody:</label>
     <select id="melodySelector"></select>

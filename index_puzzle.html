@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Little Music Reader – Puzzle</title>
+    <title>Notey Child — a little music reader – Puzzle</title>
 
     <!-- Verovio -->
     <script
@@ -31,6 +31,24 @@
             padding: 8px 16px;
             margin-right: 8px;
             margin-bottom: 10px;
+        }
+
+        /*
+         * Make the main PLAY button stand out from the rest -
+         * it's the button people reach for most.
+         */
+        #playButton {
+            background: #2e9e44;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 12px 28px;
+        }
+
+        #playButton:hover {
+            background: #257a37;
         }
 
         #melodySelector {
@@ -95,6 +113,16 @@
             opacity: 0.9;
         }
 
+        .measurePiece.correctSpot {
+            border-color: #2e9e44;
+        }
+
+        #toggleMelodyButton {
+            font-size: 16px;
+            padding: 6px 14px;
+            margin-bottom: 15px;
+        }
+
         .measurePiece > svg {
             width: 100%;
             height: 100%;
@@ -149,7 +177,7 @@
 
 <body>
 
-    <h1>Little Music Reader</h1>
+    <h1>Notey Child — a little music reader</h1>
 
     <label for="melodySelector">Melody:</label>
     <select id="melodySelector"></select>
@@ -174,12 +202,14 @@
             Drag a piece to move it to a new position.
         </p>
 
+        <button id="toggleMelodyButton">🎵 Show Melody</button>
+
         <div id="pieces"></div>
 
         <br>
 
-        <button id="checkButton">CHECK</button>
         <button id="playPuzzleButton">PLAY PUZZLE</button>
+        <button id="checkButton">CHECK</button>
         <button id="backButton">BACK TO MUSIC</button>
 
         <div id="puzzleMessage"></div>
@@ -375,7 +405,34 @@
                     document.getElementById("puzzleArea").style.display = "block";
                     document.getElementById("puzzleMessage").textContent = "";
 
+                    document.getElementById("toggleMelodyButton")
+                        .textContent = "🎵 Show Melody";
+
                     createPuzzle();
+
+                });
+
+
+            /*
+             * SHOW/HIDE MELODY (while staying on the puzzle)
+             *
+             * Lets a player peek at the colored-note score
+             * without leaving the puzzle - the puzzle's current
+             * arrangement is untouched either way, since this
+             * only toggles the #score element's visibility.
+             */
+            document.getElementById("toggleMelodyButton")
+                .addEventListener("click", function () {
+
+                    const scoreElement = document.getElementById("score");
+
+                    const isHidden =
+                        scoreElement.style.display === "none";
+
+                    scoreElement.style.display = isHidden ? "block" : "none";
+
+                    this.textContent =
+                        isHidden ? "🎵 Hide Melody" : "🎵 Show Melody";
 
                 });
 
@@ -464,7 +521,7 @@
                  * If the melody is longer than this, only its
                  * first MAX_PUZZLE_PIECES measures are used.
                  */
-                const MAX_PUZZLE_PIECES = 8;
+                const MAX_PUZZLE_PIECES = 4;
 
                 const measureCount =
                     Math.min(totalMeasures, MAX_PUZZLE_PIECES);
@@ -557,6 +614,8 @@
                     container.appendChild(piece);
 
                 });
+
+                markCorrectlyPlacedPieces();
 
             }
 
@@ -692,10 +751,36 @@
                     document.getElementById("puzzleMessage").textContent =
                         "";
 
+                    markCorrectlyPlacedPieces();
+
                 }
 
                 piece.addEventListener("pointerup", endDrag);
                 piece.addEventListener("pointercancel", endDrag);
+
+            }
+
+
+            /*
+             * Gives each piece that is CURRENTLY sitting in its
+             * correct final position a green border, live - not
+             * just once at the end via CHECK. Updates every time
+             * a drag settles, so a player gets encouraging
+             * feedback piece by piece as they go.
+             */
+            function markCorrectlyPlacedPieces() {
+
+                const pieces =
+                    Array.from(document.getElementById("pieces").children);
+
+                pieces.forEach(function (piece, index) {
+
+                    const isInCorrectSpot =
+                        Number(piece.dataset.measure) === (index + 1);
+
+                    piece.classList.toggle("correctSpot", isInCorrectSpot);
+
+                });
 
             }
 
