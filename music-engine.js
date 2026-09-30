@@ -708,6 +708,110 @@ window.MusicEngine = (function () {
      * =================================================
      */
 
+    /*
+     * =================================================
+     * COMBINE SEVERAL ONE-MEASURE DOCUMENTS INTO ONE
+     * =================================================
+     */
+
+    /*
+     * Takes an array of standalone one-measure MusicXML strings
+     * (e.g. rhythm blocks a player has assembled into a sequence)
+     * and combines them into a single playable multi-measure
+     * document. Unlike makeReorderedMusicXML, these snippets don't
+     * have to come from the same original piece - each one is its
+     * own self-contained file.
+     */
+    function combineMeasures(xmlSnippetList) {
+
+        const parser = new DOMParser();
+
+        const newDoc =
+            document.implementation.createDocument(
+                null, "score-partwise", null
+            );
+
+        const root = newDoc.documentElement;
+
+        root.setAttribute("version", "3.1");
+
+        if (xmlSnippetList.length === 0) {
+            return new XMLSerializer().serializeToString(newDoc);
+        }
+
+        /*
+         * Every block is authored as its own standalone document,
+         * so every one of them carries a <part-list>. They should
+         * all agree (same instrument), so we just use the first
+         * block's.
+         */
+        const firstDoc =
+            parser.parseFromString(xmlSnippetList[0], "application/xml");
+
+        const partList = firstDoc.querySelector("part-list");
+
+        if (partList) {
+            root.appendChild(newDoc.importNode(partList, true));
+        }
+
+        const firstPart = firstDoc.querySelector("part");
+
+        const newPart = newDoc.createElement("part");
+
+        newPart.setAttribute(
+            "id",
+            firstPart ? (firstPart.getAttribute("id") || "P1") : "P1"
+        );
+
+        xmlSnippetList.forEach(function (xml, index) {
+
+            const doc = parser.parseFromString(xml, "application/xml");
+
+            const measure = doc.querySelector("part > measure");
+
+            if (!measure) {
+                return;
+            }
+
+            const imported = newDoc.importNode(measure, true);
+
+            imported.setAttribute("number", String(index + 1));
+
+            /*
+             * Each block carries its own <attributes> (clef, key,
+             * time), since it's authored as a standalone document.
+             * Once combined, only the very first measure needs to
+             * declare them - repeating the identical clef/key/time
+             * on every measure would just clutter the rendering.
+             */
+            if (index > 0) {
+
+                const attributes =
+                    imported.querySelector(":scope > attributes");
+
+                if (attributes) {
+                    imported.removeChild(attributes);
+                }
+
+            }
+
+            newPart.appendChild(imported);
+
+        });
+
+        root.appendChild(newPart);
+
+        return new XMLSerializer().serializeToString(newDoc);
+
+    }
+
+
+    /*
+     * =================================================
+     * PUBLIC API
+     * =================================================
+     */
+
     return {
         ready: ready,
         loadMusicXML: loadMusicXML,
@@ -720,7 +824,8 @@ window.MusicEngine = (function () {
         attachHighlighting: attachHighlighting,
         makeMiniMusicXML: makeMiniMusicXML,
         makeReorderedMusicXML: makeReorderedMusicXML,
-        renderMiniMeasureSet: renderMiniMeasureSet
+        renderMiniMeasureSet: renderMiniMeasureSet,
+        combineMeasures: combineMeasures
     };
 
 

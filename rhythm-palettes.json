@@ -1,0 +1,12 @@
+[
+    {
+        "id": "demo-rhythm-palette",
+        "title": "Rhythm blocks (middle C)",
+        "patterns": [
+            { "label": "Four quarters", "file": "rhythm_c_quarters.musicxml" },
+            { "label": "Two halves", "file": "rhythm_c_halves.musicxml" },
+            { "label": "Eighth pairs", "file": "rhythm_c_eighths.musicxml" },
+            { "label": "Syncopated", "file": "rhythm_c_syncopated.musicxml" }
+        ]
+    }
+]
