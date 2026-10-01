@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Notey Child — a little music reader – Find It</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        .appTitle {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin: 10px 0 0 0;
+        }
+
+        .appTitle span:nth-child(1) { color: #e6194b; }
+        .appTitle span:nth-child(2) { color: #f58231; }
+        .appTitle span:nth-child(3) { color: #ffcc00; }
+        .appTitle span:nth-child(4) { color: #3cb44b; }
+        .appTitle span:nth-child(5) { color: #17a2b8; }
+        .appTitle span:nth-child(6) { color: #4363d8; }
+        .appTitle span:nth-child(7) { color: #911eb4; }
+        .appTitle span:nth-child(8) { color: #e83e8c; }
+        .appTitle span:nth-child(9) { color: #fd7e14; }
+        .appTitle span:nth-child(10) { color: #20c997; }
+
+        .appSubtitle {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        /*
+         * Make the main PLAY button stand out from the rest -
+         * it's the button people reach for most.
+         */
+        #playButton {
+            background: #2e9e44;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 12px 28px;
+        }
+
+        #playButton:hover {
+            background: #257a37;
+        }
+
+        #melodySelector {
+            font-size: 24px;
+            padding: 10px 16px;
+            min-width: 340px;
+            border: 3px solid #4a90d9;
+            border-radius: 8px;
+        }
+
+        label[for="melodySelector"] {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #instructions {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        #score {
+            max-width: 1000px;
+            margin-top: 30px;
+        }
+
+        /*
+         * Invisible-by-default clickable area layered over each
+         * measure in the full score. Hover/click feedback is
+         * applied by toggling classes, same pattern as everywhere
+         * else in the app.
+         */
+        .measureOverlay {
+            fill: transparent;
+            cursor: pointer;
+        }
+
+        .measureOverlay:hover {
+            fill: #4a90d9;
+            fill-opacity: 0.15;
+        }
+
+        .measureOverlay.correctFlash {
+            fill: #2e9e44;
+            fill-opacity: 0.35;
+        }
+
+        .measureOverlay.wrongFlash {
+            fill: #d0392b;
+            fill-opacity: 0.35;
+        }
+
+        #findMessage {
+            font-size: 48px;
+            font-weight: bold;
+            text-align: center;
+            margin: 30px auto;
+            min-height: 60px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
+    <div class="appSubtitle">LITTLE MUSIC READER</div>
+
+    <label for="melodySelector">Melody:</label>
+    <select id="melodySelector"></select>
+
+    <br><br>
+
+    <p id="instructions">
+        Listen to the excerpt, then click where it is in the music.
+    </p>
+
+    <button id="playButton">▶ PLAY EXCERPT</button>
+    <button id="newExcerptButton">🔀 New Excerpt</button>
+
+    <div id="score">Loading music...</div>
+
+    <div id="findMessage"></div>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            let currentExcerpt = null;
+
+
+            /*
+             * =================================================
+             * PICK A RANDOM EXCERPT FROM THE CURRENT MELODY
+             * =================================================
+             */
+
+            function pickNewExcerpt() {
+
+                if (!window.originalMusicXML) {
+                    return;
+                }
+
+                const totalMeasures =
+                    MusicEngine.countMeasures(window.originalMusicXML);
+
+                if (totalMeasures < 1) {
+                    currentExcerpt = null;
+                    return;
+                }
+
+                /*
+                 * One or two measures, per the brief - but never
+                 * longer than the piece actually has.
+                 */
+                const length =
+                    Math.min(
+                        totalMeasures,
+                        (Math.random() < 0.5) ? 1 : 2
+                    );
+
+                const maxStart = totalMeasures - length + 1;
+
+                const start = 1 + Math.floor(Math.random() * maxStart);
+
+                currentExcerpt = { start: start, length: length };
+
+                clearMeasureFlashes();
+
+                document.getElementById("findMessage").textContent = "";
+
+            }
+
+
+            /*
+             * =================================================
+             * MAKE EVERY MEASURE IN THE FULL SCORE CLICKABLE
+             * =================================================
+             */
+
+            function attachMeasureClickHandlers() {
+
+                const svg = document.querySelector("#score svg");
+
+                if (!svg) {
+                    return;
+                }
+
+                const measureGroups =
+                    Array.from(svg.querySelectorAll("g.measure"));
+
+                measureGroups.forEach(function (measureGroup, index) {
+
+                    const measureNumber = index + 1;
+
+                    const box = measureGroup.getBBox();
+
+                    const overlay =
+                        document.createElementNS(
+                            "http://www.w3.org/2000/svg", "rect"
+                        );
+
+                    overlay.setAttribute("x", box.x);
+                    overlay.setAttribute("y", box.y);
+                    overlay.setAttribute("width", box.width);
+                    overlay.setAttribute("height", box.height);
+                    overlay.setAttribute("class", "measureOverlay");
+
+                    overlay.addEventListener("click", function () {
+                        handleMeasureClick(measureNumber, overlay);
+                    });
+
+                    /*
+                     * Appended LAST (on top), so the whole measure's
+                     * area is reliably clickable rather than only
+                     * the exact pixels of a notehead or staff line.
+                     */
+                    measureGroup.appendChild(overlay);
+
+                });
+
+            }
+
+            function clearMeasureFlashes() {
+
+                document
+                    .querySelectorAll(".measureOverlay")
+                    .forEach(function (overlay) {
+                        overlay.classList.remove(
+                            "correctFlash", "wrongFlash"
+                        );
+                    });
+
+            }
+
+
+            /*
+             * =================================================
+             * HANDLE A CLICK ON A MEASURE
+             * =================================================
+             */
+
+            function handleMeasureClick(measureNumber, overlay) {
+
+                if (!currentExcerpt) {
+                    return;
+                }
+
+                const isCorrect =
+                    measureNumber >= currentExcerpt.start &&
+                    measureNumber <=
+                        currentExcerpt.start + currentExcerpt.length - 1;
+
+                if (isCorrect) {
+
+                    overlay.classList.add("correctFlash");
+
+                    document.getElementById("findMessage").textContent =
+                        "🎉 Yes! You found it!";
+
+                    /*
+                     * Move on to a fresh excerpt automatically after
+                     * a short pause, same pattern as the listen-and-
+                     * choose activity.
+                     */
+                    setTimeout(function () {
+                        pickNewExcerpt();
+                    }, 2200);
+
+                }
+                else {
+
+                    overlay.classList.add("wrongFlash");
+
+                    document.getElementById("findMessage").textContent =
+                        "Not quite - listen again and try another spot.";
+
+                    setTimeout(function () {
+                        overlay.classList.remove("wrongFlash");
+                    }, 800);
+
+                }
+
+            }
+
+
+            /*
+             * =================================================
+             * LOAD A MELODY
+             * =================================================
+             */
+
+            function loadMelody(toolkit, entry) {
+
+                document.getElementById("score").innerHTML =
+                    "Loading music...";
+
+                document.getElementById("findMessage").textContent = "";
+
+                return MusicEngine.loadMusicXML(entry.file)
+                    .then(function (musicXML) {
+
+                        window.originalMusicXML = musicXML;
+
+                        MusicEngine.renderScore(toolkit, musicXML, "score");
+
+                        attachMeasureClickHandlers();
+
+                        pickNewExcerpt();
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the music.</p>";
+
+                    });
+
+            }
+
+
+            /*
+             * =================================================
+             * LOAD THE MELODY CATALOG
+             * =================================================
+             */
+
+            MusicEngine.ready(function (toolkit) {
+
+                MusicEngine.loadCatalog("melodies.json")
+                    .then(function (melodies) {
+
+                        const selector =
+                            document.getElementById("melodySelector");
+
+                        melodies.forEach(function (entry, index) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = index;
+
+                            option.textContent =
+                                entry.title +
+                                (entry.composer ? " – " + entry.composer : "");
+
+                            selector.appendChild(option);
+
+                        });
+
+                        selector.addEventListener("change", function () {
+
+                            loadMelody(
+                                toolkit,
+                                melodies[Number(selector.value)]
+                            );
+
+                        });
+
+                        if (melodies.length > 0) {
+                            loadMelody(toolkit, melodies[0]);
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("score").innerHTML =
+                            "<p>Could not load the melody catalog.</p>";
+
+                    });
+
+
+                document.getElementById("playButton")
+                    .addEventListener("click", function () {
+
+                        if (!currentExcerpt || !window.originalMusicXML) {
+                            return;
+                        }
+
+                        const excerptXML =
+                            MusicEngine.makeExcerptMusicXML(
+                                window.originalMusicXML,
+                                currentExcerpt.start,
+                                currentExcerpt.length
+                            );
+
+                        MusicEngine.playMusicXML(excerptXML);
+
+                    });
+
+                document.getElementById("newExcerptButton")
+                    .addEventListener("click", function () {
+                        pickNewExcerpt();
+                    });
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>

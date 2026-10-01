@@ -344,6 +344,120 @@ window.MusicEngine = (function () {
 
     /*
      * =================================================
+     * MAKE AN EXCERPT (A RANGE OF MEASURES) MUSICXML DOCUMENT
+     * =================================================
+     */
+
+    /*
+     * Like makeMiniMusicXML, but extracts a contiguous RANGE of
+     * measures (e.g. measures 5-6) instead of just one. Used for
+     * "find it in the score"-style activities, where a short
+     * excerpt is played but the player has to locate it in the
+     * full, unmodified notation - so unlike makeMiniMusicXML,
+     * this does NOT renumber the excerpt as starting from
+     * measure 1 (there's no answer to hide here).
+     */
+    function makeExcerptMusicXML(originalXML, startMeasure, measureCount) {
+
+        const parser = new DOMParser();
+
+        const xmlDoc =
+            parser.parseFromString(originalXML, "application/xml");
+
+        const scorePartwise = xmlDoc.documentElement;
+
+        const originalPart = scorePartwise.querySelector("part");
+
+        if (!originalPart) {
+            throw new Error("Could not find a part in the MusicXML.");
+        }
+
+        const measures =
+            Array.from(originalPart.querySelectorAll(":scope > measure"));
+
+        const endMeasure = startMeasure + measureCount - 1;
+
+        if (startMeasure < 1 || endMeasure > measures.length) {
+            throw new Error("Requested excerpt is out of range.");
+        }
+
+        const newDoc =
+            document.implementation.createDocument(
+                null, "score-partwise", null
+            );
+
+        const newRoot = newDoc.documentElement;
+
+        newRoot.setAttribute(
+            "version",
+            scorePartwise.getAttribute("version") || "4.0"
+        );
+
+        /*
+         * Deliberately no <work> or <identification> here either -
+         * same reasoning as makeMiniMusicXML: Verovio would render
+         * them as a page header, which clutters a short excerpt.
+         */
+        const partList = scorePartwise.querySelector("part-list");
+
+        if (partList) {
+            newRoot.appendChild(newDoc.importNode(partList, true));
+        }
+
+        const newPart = newDoc.createElement("part");
+
+        newPart.setAttribute(
+            "id",
+            originalPart.getAttribute("id") || "P1"
+        );
+
+        const firstMeasureAttributes =
+            measures[0].querySelector(":scope > attributes");
+
+        for (let i = startMeasure; i <= endMeasure; i++) {
+
+            const imported = newDoc.importNode(measures[i - 1], true);
+
+            imported.setAttribute(
+                "number", String(i - startMeasure + 1)
+            );
+
+            /*
+             * If the excerpt doesn't start at the piece's actual
+             * first measure, carry over the initial clef/key/time
+             * so the excerpt is still playable on its own.
+             */
+            if (i === startMeasure &&
+                startMeasure > 1 &&
+                firstMeasureAttributes) {
+
+                const alreadyHasAttributes =
+                    imported.querySelector(":scope > attributes");
+
+                if (!alreadyHasAttributes) {
+
+                    imported.insertBefore(
+                        newDoc.importNode(firstMeasureAttributes, true),
+                        imported.firstChild
+                    );
+
+                }
+
+            }
+
+            newPart.appendChild(imported);
+
+        }
+
+        newRoot.appendChild(newPart);
+
+        return new XMLSerializer().serializeToString(newDoc);
+
+    }
+
+
+    /*
+     * =================================================
      * MAKE A REORDERED MUSICXML DOCUMENT
      * =================================================
      */
@@ -823,6 +937,7 @@ window.MusicEngine = (function () {
         stopMIDI: stopMIDI,
         attachHighlighting: attachHighlighting,
         makeMiniMusicXML: makeMiniMusicXML,
+        makeExcerptMusicXML: makeExcerptMusicXML,
         makeReorderedMusicXML: makeReorderedMusicXML,
         renderMiniMeasureSet: renderMiniMeasureSet,
         combineMeasures: combineMeasures
