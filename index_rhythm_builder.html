@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Notey Child — a little music reader – Build a Rhythm</title>
+    <title>Notey Child — a little music reader – Build a Melody</title>
 
     <!-- Verovio -->
     <script
@@ -79,7 +79,7 @@
             background: #257a37;
         }
 
-        #paletteSelector {
+        #setSelector {
             font-size: 24px;
             padding: 10px 16px;
             min-width: 340px;
@@ -87,7 +87,7 @@
             border-radius: 8px;
         }
 
-        label[for="paletteSelector"] {
+        label[for="setSelector"] {
             font-size: 24px;
             font-weight: bold;
         }
@@ -102,26 +102,22 @@
             margin-top: 35px;
         }
 
-        #palette,
-        #sequence {
+        .slot {
+            margin-top: 15px;
+        }
+
+        .slotOptions {
             display: flex;
             flex-wrap: wrap;
             gap: 20px;
-            margin-top: 15px;
-            min-height: 300px;
+            margin-top: 10px;
         }
 
-        #sequence {
-            border: 3px dashed #ccc;
-            border-radius: 12px;
-            padding: 15px;
-        }
-
-        .rhythmBlock {
+        .rhythmOption {
             position: relative;
 
-            width: 480px;
-            height: 300px;
+            width: 300px;
+            height: 190px;
 
             border: 4px solid #888;
             border-radius: 12px;
@@ -132,51 +128,35 @@
             align-items: center;
             justify-content: center;
 
+            cursor: pointer;
+
             box-sizing: border-box;
 
             overflow: hidden;
         }
 
-        .rhythmBlock > svg {
+        .rhythmOption:hover {
+            border-color: #4a90d9;
+        }
+
+        .rhythmOption.selected {
+            border-color: #2e9e44;
+            border-width: 6px;
+        }
+
+        .rhythmOption > svg {
             width: 100%;
             height: 100%;
             display: block;
         }
 
-        /*
-         * Palette blocks: click anywhere to add a copy.
-         */
-        .paletteBlock {
-            cursor: pointer;
-        }
-
-        .paletteBlock:hover {
-            border-color: #4a90d9;
-        }
-
-        /*
-         * Sequence blocks: draggable to reorder, same touch/mouse
-         * handling as the puzzle pieces.
-         */
-        .sequenceBlock {
-            cursor: grab;
-            touch-action: none;
-            user-select: none;
-        }
-
-        .sequenceBlock.dragging {
-            cursor: grabbing;
-            box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-            opacity: 0.9;
-        }
-
         .playPieceButton {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
+            bottom: 8px;
+            right: 8px;
 
-            width: 42px;
-            height: 42px;
+            width: 34px;
+            height: 34px;
 
             border-radius: 50%;
             border: none;
@@ -184,8 +164,8 @@
             background: #4a90d9;
             color: white;
 
-            font-size: 18px;
-            line-height: 42px;
+            font-size: 15px;
+            line-height: 34px;
             padding: 0;
             margin: 0;
 
@@ -196,37 +176,49 @@
             background: #3a7bc0;
         }
 
-        .removeButton {
-            position: absolute;
-            top: 10px;
-            right: 10px;
+        #myMelody {
+            max-width: 1000px;
+            margin-top: 20px;
+        }
 
-            width: 34px;
-            height: 34px;
+        /* Colored note highlighting during playback */
+        #myMelody g.note {
+            fill: black;
+        }
 
-            border-radius: 50%;
-            border: none;
+        #myMelody g.note.playing {
+            fill: red;
+        }
 
-            background: #d0392b;
+    
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
             color: white;
-
-            font-size: 18px;
-            line-height: 34px;
-            padding: 0;
-            margin: 0;
-
-            cursor: pointer;
-        }
-
-        .removeButton:hover {
-            background: #a92d22;
-        }
-
-        #sequenceMessage {
-            font-size: 22px;
-            margin-top: 15px;
-            min-height: 32px;
-            color: #555;
         }
 
     </style>
@@ -239,114 +231,137 @@
     <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
     <div class="appSubtitle">LITTLE MUSIC READER</div>
 
-    <label for="paletteSelector">Palette:</label>
-    <select id="paletteSelector"></select>
+    <nav class="activityNav">
+        <a href="index.html">🎵 Listen &amp; Follow</a>
+        <a href="index_puzzle.html">🧩 Puzzle</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
+        <a href="index_find_in_score.html">🔍 Find It</a>
+        <a href="index_rhythm_builder.html" class="current">🎼 Build a Melody</a>
+        <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
+    </nav>
+
+    <label for="setSelector">Melody Set:</label>
+    <select id="setSelector"></select>
 
     <br><br>
 
     <p id="instructions">
-        Click a block to add it to your melody, then press PLAY.
+        Choose a rhythm for each phrase, then press PLAY!
     </p>
 
-    <button id="playButton">▶ PLAY</button>
-    <button id="stopButton">■ Stop</button>
-    <button id="clearButton">🗑 Clear</button>
-
-    <h2>Blocks</h2>
-    <div id="palette">Loading blocks...</div>
+    <div id="slots">Loading...</div>
 
     <h2>Your Melody</h2>
-    <div id="sequence"></div>
-    <div id="sequenceMessage">
-        Click a block above to start building your melody!
-    </div>
+
+    <button id="playButton">▶ PLAY MY MELODY</button>
+    <button id="stopButton">■ Stop</button>
+
+    <div id="myMelody"></div>
 
 
     <script>
 
         document.addEventListener("DOMContentLoaded", function () {
 
-            let dragState = null;
+            let currentSet = null;
+
+            /*
+             * Per slot: the full list of option entries, each
+             * with its own loaded XML and rendered SVG.
+             */
+            let slotData = [];
+
+            /*
+             * Which option index is currently chosen in each slot.
+             * Defaults to the first option, so there's always a
+             * complete, playable melody from the moment a set loads.
+             */
+            let selections = [];
+
+            let mainToolkit = null;
 
 
             /*
              * =================================================
-             * LOAD A PALETTE
+             * LOAD A MELODY-BUILDER SET
              * =================================================
              */
 
-            function loadPalette(palette) {
+            function loadSet(set) {
 
-                clearSequence();
+                currentSet = set;
 
-                const paletteContainer =
-                    document.getElementById("palette");
+                const slotsContainer = document.getElementById("slots");
 
-                paletteContainer.innerHTML = "Loading blocks...";
+                slotsContainer.innerHTML = "Loading...";
+
+                /*
+                 * Load every option of every slot, all at once.
+                 */
+                const allOptions = [];
+
+                set.slots.forEach(function (slot) {
+                    slot.options.forEach(function (option) {
+                        allOptions.push(option);
+                    });
+                });
 
                 const filePromises =
-                    palette.patterns.map(function (pattern) {
-                        return MusicEngine.loadMusicXML(pattern.file);
+                    allOptions.map(function (option) {
+                        return MusicEngine.loadMusicXML(option.file);
                     });
 
                 Promise.all(filePromises)
                     .then(function (xmlList) {
 
                         /*
-                         * "g.measure" - each block is exactly one
-                         * measure, same as a puzzle piece.
+                         * All options across every slot share one
+                         * scale, so rhythms render at a consistent,
+                         * comparable size throughout.
                          */
                         const svgList =
                             MusicEngine.renderMiniMeasureSet(
                                 xmlList, "g.measure"
                             );
 
-                        paletteContainer.innerHTML = "";
+                        slotData = [];
+                        selections = [];
 
-                        palette.patterns.forEach(function (pattern, index) {
+                        let cursor = 0;
 
-                            const block =
-                                document.createElement("div");
+                        set.slots.forEach(function (slot) {
 
-                            block.className =
-                                "rhythmBlock paletteBlock";
+                            const options =
+                                slot.options.map(function (option) {
 
-                            if (svgList[index]) {
-                                block.innerHTML = svgList[index];
-                            }
-                            else {
-                                block.textContent =
-                                    pattern.label || ("Block " + (index + 1));
-                            }
+                                    const xml = xmlList[cursor];
+                                    const svg = svgList[cursor];
 
-                            block.title = "Click to add to your melody";
+                                    cursor = cursor + 1;
 
-                            /*
-                             * Each palette block remembers its own
-                             * XML and its already-rendered SVG, so
-                             * adding a copy to the sequence later
-                             * doesn't need to re-fetch or re-render
-                             * anything.
-                             */
-                            block._xml = xmlList[index];
-                            block._svg = svgList[index];
-                            block._label = pattern.label;
+                                    return {
+                                        label: option.label,
+                                        xml: xml,
+                                        svg: svg
+                                    };
 
-                            block.addEventListener("click", function () {
-                                addToSequence(block);
-                            });
+                                });
 
-                            paletteContainer.appendChild(block);
+                            slotData.push(options);
+                            selections.push(0);
 
                         });
+
+                        renderSlots();
+                        recomputeMelody();
 
                     })
                     .catch(function (error) {
 
                         console.error(error);
 
-                        paletteContainer.innerHTML =
-                            "<p>Could not load this palette.</p>";
+                        slotsContainer.innerHTML =
+                            "<p>Could not load this melody set.</p>";
 
                     });
 
@@ -355,234 +370,154 @@
 
             /*
              * =================================================
-             * SEQUENCE: ADD / REMOVE / CLEAR
+             * RENDER THE SLOTS AND THEIR OPTIONS
              * =================================================
              */
 
-            function addToSequence(paletteBlock) {
+            function renderSlots() {
 
-                const sequenceContainer =
-                    document.getElementById("sequence");
+                const slotsContainer = document.getElementById("slots");
 
-                const block = document.createElement("div");
+                slotsContainer.innerHTML = "";
 
-                block.className = "rhythmBlock sequenceBlock";
+                currentSet.slots.forEach(function (slot, slotIndex) {
 
-                if (paletteBlock._svg) {
-                    block.innerHTML = paletteBlock._svg;
-                }
-                else {
-                    block.textContent = paletteBlock._label || "Block";
-                }
+                    const slotDiv = document.createElement("div");
 
-                /*
-                 * This copy's own audio - stored directly on the
-                 * element, so it travels with it even after drags
-                 * reorder the DOM, and stays correct no matter how
-                 * many copies of the same block exist.
-                 */
-                block._xml = paletteBlock._xml;
+                    slotDiv.className = "slot";
 
-                const removeButton = document.createElement("button");
+                    const heading = document.createElement("h2");
 
-                removeButton.className = "removeButton";
-                removeButton.type = "button";
-                removeButton.title = "Remove this block";
-                removeButton.textContent = "✕";
+                    heading.textContent = slot.label;
 
-                removeButton.addEventListener("click", function (event) {
-                    event.stopPropagation();
-                    block.remove();
-                    updateSequenceMessage();
-                });
+                    slotDiv.appendChild(heading);
 
-                block.appendChild(removeButton);
+                    const optionsDiv = document.createElement("div");
 
-                const playButton = document.createElement("button");
+                    optionsDiv.className = "slotOptions";
 
-                playButton.className = "playPieceButton";
-                playButton.type = "button";
-                playButton.title = "Play this block";
-                playButton.textContent = "▶";
+                    slotData[slotIndex].forEach(function (option, optionIndex) {
 
-                playButton.addEventListener("click", function (event) {
-                    event.stopPropagation();
-                    MusicEngine.playMusicXML(block._xml);
-                });
+                        const tile = document.createElement("div");
 
-                block.appendChild(playButton);
+                        tile.className = "rhythmOption";
 
-                makeDraggable(block);
+                        if (optionIndex === selections[slotIndex]) {
+                            tile.classList.add("selected");
+                        }
 
-                sequenceContainer.appendChild(block);
-
-                updateSequenceMessage();
-
-            }
-
-            function clearSequence() {
-
-                document.getElementById("sequence").innerHTML = "";
-
-                updateSequenceMessage();
-
-            }
-
-            function updateSequenceMessage() {
-
-                const count =
-                    document.getElementById("sequence").children.length;
-
-                document.getElementById("sequenceMessage").textContent =
-                    count === 0
-                        ? "Click a block above to start building your melody!"
-                        : "Your melody has " + count +
-                            (count === 1 ? " block." : " blocks.");
-
-            }
-
-
-            /*
-             * =================================================
-             * DRAG TO REORDER WITHIN THE SEQUENCE (Pointer Events -
-             * works consistently for mouse, touch, and pen, unlike
-             * the native HTML5 drag-and-drop API on touchscreens)
-             * =================================================
-             */
-
-            function makeDraggable(block) {
-
-                block.addEventListener("pointerdown", function (event) {
-
-                    if (event.target.closest(
-                        ".playPieceButton, .removeButton"
-                    )) {
-                        return;
-                    }
-
-                    event.preventDefault();
-
-                    const rect = block.getBoundingClientRect();
-
-                    dragState = {
-                        block: block,
-                        grabOffsetX: event.clientX - rect.left,
-                        grabOffsetY: event.clientY - rect.top
-                    };
-
-                    block.setPointerCapture(event.pointerId);
-
-                    block.classList.add("dragging");
-
-                });
-
-                block.addEventListener("pointermove", function (event) {
-
-                    if (!dragState || dragState.block !== block) {
-                        return;
-                    }
-
-                    block.style.pointerEvents = "none";
-
-                    const hoverTarget =
-                        document.elementFromPoint(
-                            event.clientX, event.clientY
-                        );
-
-                    block.style.pointerEvents = "";
-
-                    const targetBlock =
-                        hoverTarget
-                            ? hoverTarget.closest(".sequenceBlock")
-                            : null;
-
-                    if (targetBlock && targetBlock !== block) {
-
-                        const container =
-                            document.getElementById("sequence");
-
-                        const targetRect =
-                            targetBlock.getBoundingClientRect();
-
-                        const midpoint =
-                            targetRect.left + targetRect.width / 2;
-
-                        if (event.clientX < midpoint) {
-                            container.insertBefore(block, targetBlock);
+                        if (option.svg) {
+                            tile.innerHTML = option.svg;
                         }
                         else {
-                            container.insertBefore(
-                                block, targetBlock.nextSibling
-                            );
+                            tile.textContent =
+                                option.label || ("Option " + (optionIndex + 1));
                         }
 
-                    }
+                        tile.addEventListener("click", function () {
+                            chooseOption(slotIndex, optionIndex);
+                        });
 
-                    block.style.transform = "none";
+                        const playButton =
+                            document.createElement("button");
 
-                    const naturalRect = block.getBoundingClientRect();
+                        playButton.className = "playPieceButton";
+                        playButton.type = "button";
+                        playButton.title = "Play this rhythm";
+                        playButton.textContent = "▶";
 
-                    const dx =
-                        event.clientX - dragState.grabOffsetX -
-                        naturalRect.left;
+                        playButton.addEventListener("click", function (event) {
+                            event.stopPropagation();
+                            MusicEngine.playMusicXML(option.xml);
+                        });
 
-                    const dy =
-                        event.clientY - dragState.grabOffsetY -
-                        naturalRect.top;
+                        tile.appendChild(playButton);
 
-                    block.style.transform =
-                        "translate(" + dx + "px, " + dy + "px)";
+                        optionsDiv.appendChild(tile);
+
+                    });
+
+                    slotDiv.appendChild(optionsDiv);
+
+                    slotsContainer.appendChild(slotDiv);
 
                 });
-
-                function endDrag(event) {
-
-                    if (!dragState || dragState.block !== block) {
-                        return;
-                    }
-
-                    block.releasePointerCapture(event.pointerId);
-
-                    block.classList.remove("dragging");
-                    block.style.transform = "";
-
-                    dragState = null;
-
-                }
-
-                block.addEventListener("pointerup", endDrag);
-                block.addEventListener("pointercancel", endDrag);
 
             }
 
 
             /*
              * =================================================
-             * PLAY / STOP / CLEAR
+             * CHOOSE AN OPTION FOR A SLOT
+             * =================================================
+             */
+
+            function chooseOption(slotIndex, optionIndex) {
+
+                selections[slotIndex] = optionIndex;
+
+                /*
+                 * Update the "selected" highlight within just this
+                 * slot, without rebuilding every tile.
+                 */
+                const slotDivs =
+                    document.querySelectorAll("#slots .slot");
+
+                const tiles =
+                    slotDivs[slotIndex].querySelectorAll(".rhythmOption");
+
+                tiles.forEach(function (tile, index) {
+                    tile.classList.toggle(
+                        "selected", index === optionIndex
+                    );
+                });
+
+                recomputeMelody();
+
+            }
+
+
+            /*
+             * =================================================
+             * ASSEMBLE AND SHOW THE CURRENT MELODY
+             * =================================================
+             */
+
+            function recomputeMelody() {
+
+                if (!mainToolkit || slotData.length === 0) {
+                    return;
+                }
+
+                const xmlList =
+                    slotData.map(function (options, slotIndex) {
+                        return options[selections[slotIndex]].xml;
+                    });
+
+                const combinedXML =
+                    MusicEngine.combineMeasures(xmlList);
+
+                window.originalMusicXML = combinedXML;
+
+                MusicEngine.renderScore(
+                    mainToolkit, combinedXML, "myMelody"
+                );
+
+            }
+
+
+            /*
+             * =================================================
+             * PLAY / STOP MY MELODY
              * =================================================
              */
 
             document.getElementById("playButton")
                 .addEventListener("click", function () {
 
-                    const blocks =
-                        Array.from(
-                            document.getElementById("sequence").children
-                        );
-
-                    if (blocks.length === 0) {
-                        return;
+                    if (mainToolkit) {
+                        MusicEngine.playMIDI(mainToolkit);
                     }
-
-                    const xmlList =
-                        blocks.map(function (block) {
-                            return block._xml;
-                        });
-
-                    const combinedXML =
-                        MusicEngine.combineMeasures(xmlList);
-
-                    MusicEngine.playMusicXML(combinedXML);
 
                 });
 
@@ -591,44 +526,48 @@
                     MusicEngine.stopMIDI();
                 });
 
-            document.getElementById("clearButton")
-                .addEventListener("click", function () {
-                    clearSequence();
-                });
-
 
             /*
              * =================================================
-             * LOAD THE PALETTE CATALOG
+             * LOAD THE MELODY-BUILDER CATALOG
              * =================================================
              */
 
-            MusicEngine.ready(function () {
+            MusicEngine.ready(function (toolkit) {
 
-                MusicEngine.loadCatalog("rhythm-palettes.json")
-                    .then(function (palettes) {
+                mainToolkit = toolkit;
+
+                /*
+                 * Color notes red as "Your Melody" plays - this
+                 * only needs to be set up once; it always reflects
+                 * whatever is currently loaded in mainToolkit.
+                 */
+                MusicEngine.attachHighlighting(toolkit);
+
+                MusicEngine.loadCatalog("melody-builder-sets.json")
+                    .then(function (sets) {
 
                         const selector =
-                            document.getElementById("paletteSelector");
+                            document.getElementById("setSelector");
 
-                        palettes.forEach(function (palette, index) {
+                        sets.forEach(function (set, index) {
 
                             const option =
                                 document.createElement("option");
 
                             option.value = index;
-                            option.textContent = palette.title;
+                            option.textContent = set.title;
 
                             selector.appendChild(option);
 
                         });
 
                         selector.addEventListener("change", function () {
-                            loadPalette(palettes[Number(selector.value)]);
+                            loadSet(sets[Number(selector.value)]);
                         });
 
-                        if (palettes.length > 0) {
-                            loadPalette(palettes[0]);
+                        if (sets.length > 0) {
+                            loadSet(sets[0]);
                         }
 
                     })
@@ -636,8 +575,8 @@
 
                         console.error(error);
 
-                        document.getElementById("palette").innerHTML =
-                            "<p>Could not load the palette catalog.</p>";
+                        document.getElementById("slots").innerHTML =
+                            "<p>Could not load the melody-builder catalog.</p>";
 
                     });
 

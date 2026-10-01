@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Little Music Reader – Choose a Rhythm</title>
+
+<!-- Verovio -->
+<script
+    src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+    defer>
+</script>
+
+<!-- MIDI player -->
+<script src="https://www.midijs.net/lib/midi.js"></script>
+
+<!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+<script src="music-engine.js"></script>
+
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 30px;
+        max-width: 1200px;
+    }
+
+    button {
+        font-size: 18px;
+        padding: 8px 16px;
+        margin-right: 8px;
+        margin-bottom: 10px;
+    }
+
+    button:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+    }
+
+    #taskSelector {
+        font-size: 18px;
+        padding: 6px 10px;
+        min-width: 320px;
+        max-width: 100%;
+    }
+
+    h2 {
+        margin-bottom: 6px;
+    }
+
+    #stepCount {
+        font-size: 16px;
+        color: #666;
+        margin: 24px 0 0 0;
+    }
+
+    #stepLabel {
+        font-size: 34px;
+        margin: 4px 0 6px 0;
+    }
+
+    #stepHint {
+        margin: 0 0 18px 0;
+        color: #444;
+    }
+
+    /* ---------- the 4 rhythm choices ---------- */
+
+    #choices {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+    }
+
+    .measurePiece {
+        position: relative;
+        width: 360px;
+        max-width: 100%;
+        aspect-ratio: 360 / 220;
+        border: 4px solid #888;
+        border-radius: 12px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-sizing: border-box;
+        overflow: hidden;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .measurePiece:hover,
+    .measurePiece:focus-visible {
+        border-color: #4a90d9;
+        outline: none;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    }
+
+    .measurePiece.chosen {
+        border-color: #3a9d5d;
+        background: #f1faf4;
+    }
+
+    .measurePiece > svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .playPieceButton {
+        position: absolute;
+        bottom: 8px;
+        right: 8px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        border: none;
+        background: #4a90d9;
+        color: white;
+        font-size: 16px;
+        line-height: 36px;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+    }
+
+    .playPieceButton:hover {
+        background: #3a7bc0;
+    }
+
+    /* ---------- the melody being built ---------- */
+
+    #melody {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-top: 10px;
+    }
+
+    .slotWrap {
+        width: 220px;
+        max-width: 100%;
+    }
+
+    .slot {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 360 / 220;
+        border: 3px dashed #bbb;
+        border-radius: 10px;
+        background: #fafafa;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 36px;
+        color: #bbb;
+        cursor: pointer;
+        overflow: hidden;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .slot.filled {
+        border: 3px solid #3a9d5d;
+        background: white;
+    }
+
+    .slot.active {
+        border-color: #4a90d9;
+        box-shadow: 0 0 0 3px rgba(74, 144, 217, 0.3);
+    }
+
+    .slot:focus-visible {
+        outline: 3px solid #4a90d9;
+        outline-offset: 2px;
+    }
+
+    .slot > svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .slotLabel {
+        font-size: 14px;
+        color: #666;
+        text-align: center;
+        margin-top: 4px;
+    }
+
+    #controls {
+        margin-top: 24px;
+    }
+
+    #finalMessage {
+        font-size: 32px;
+        margin-top: 24px;
+        min-height: 40px;
+    }
+
+    #finalScore {
+        display: none;
+        max-width: 1000px;
+        margin-top: 20px;
+    }
+
+    #finalScore g.note {
+        fill: black;
+    }
+
+    #finalScore g.note.playing {
+        fill: red;
+    }
+
+    #loadError {
+        color: #b00020;
+    }
+
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<h1>Little Music Reader</h1>
+
+    <nav class="activityNav">
+        <a href="index.html">🎵 Listen &amp; Follow</a>
+        <a href="index_puzzle.html">🧩 Puzzle</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
+        <a href="index_find_in_score.html">🔍 Find It</a>
+        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
+        <a href="index_rhythm_choice.html" class="current">🥁 Choose a Rhythm</a>
+    </nav>
+
+<label for="taskSelector">Task:</label>
+<select id="taskSelector"></select>
+
+<p id="loadError"></p>
+
+<div id="choicesArea">
+    <p id="stepCount"></p>
+    <h2 id="stepLabel"></h2>
+    <p id="stepHint">
+        The notes are the same in every box, but the rhythm is different.
+        Press ▶ to listen, then click the rhythm you like best.
+    </p>
+    <div id="choices"></div>
+</div>
+
+<h2>Your melody</h2>
+<p>Click a box to change your choice for that part.</p>
+<div id="melody"></div>
+
+<div id="controls">
+    <button id="playButton">▶ PLAY MELODY</button>
+    <button id="stopButton">■ Stop</button>
+    <button id="restartButton">Start over</button>
+</div>
+
+<div id="finalMessage"></div>
+<div id="finalScore"></div>
+
+<script>
+/*
+ * =====================================================
+ * PURE HELPERS - build MusicXML for one measure.
+ * They touch neither the DOM nor MusicEngine, so they
+ * can be tested on their own.
+ * =====================================================
+ */
+/* BEGIN PURE */
+
+/* Four divisions per quarter note: whole = 16, half = 8, quarter = 4, eighth = 2 */
+var BASE_DIVISIONS = { w: 16, h: 8, q: 4, e: 2 };
+var TYPE_NAME = { w: "whole", h: "half", q: "quarter", e: "eighth" };
+
+/* "q" -> quarter, "q." -> dotted quarter */
+function parseDuration(code) {
+    var dotted = code.charAt(code.length - 1) === ".";
+    var base = dotted ? code.slice(0, -1) : code;
+
+    if (!BASE_DIVISIONS.hasOwnProperty(base)) {
+        throw new Error("Unknown duration: " + code);
+    }
+
+    return {
+        base: base,
+        dotted: dotted,
+        divisions: dotted ? BASE_DIVISIONS[base] * 3 / 2 : BASE_DIVISIONS[base]
+    };
+}
+
+/* "C5", "F#4", "Bb3" */
+function parsePitch(text) {
+    var m = /^([A-G])(#|b)?(-?\d)$/.exec(text);
+
+    if (!m) {
+        throw new Error("Bad pitch: " + text);
+    }
+
+    return {
+        step: m[1],
+        alter: m[2] === "#" ? 1 : (m[2] === "b" ? -1 : 0),
+        octave: Number(m[3])
+    };
+}
+
+function parseTime(text) {
+    var parts = String(text || "4/4").split("/");
+    return { beats: Number(parts[0]), beatType: Number(parts[1]) };
+}
+
+/* Only plain eighth notes get beamed together */
+function isBeamable(note) {
+    return note.dur.base === "e" && !note.dur.dotted;
+}
+
+function measureXML(task, pitches, rhythm, number, withAttributes) {
+    var time = parseTime(task.time);
+    var barLength = time.beats * 16 / time.beatType;
+
+    if (pitches.length !== rhythm.length) {
+        throw new Error(
+            "Pitches (" + pitches.length + ") and rhythm (" +
+            rhythm.length + ") must have the same length"
+        );
+    }
+
+    var notes = [];
+    var position = 0;
+
+    rhythm.forEach(function (code, i) {
+        var dur = parseDuration(code);
+        notes.push({
+            pitch: parsePitch(pitches[i]),
+            dur: dur,
+            start: position
+        });
+        position += dur.divisions;
+    });
+
+    if (position !== barLength) {
+        throw new Error(
+            "Rhythm does not fill the measure: " + rhythm.join(" ")
+        );
+    }
+
+    /*
+     * Beam neighbouring eighth notes that sit inside
+     * the same beat.
+     */
+    var beams = notes.map(function () { return null; });
+    var i = 0;
+
+    while (i < notes.length) {
+        if (!isBeamable(notes[i])) {
+            i++;
+            continue;
+        }
+
+        var beat = Math.floor(notes[i].start / 4);
+        var j = i;
+
+        while (
+            j + 1 < notes.length &&
+            isBeamable(notes[j + 1]) &&
+            Math.floor(notes[j + 1].start / 4) === beat
+        ) {
+            j++;
+        }
+
+        if (j > i) {
+            for (var k = i; k <= j; k++) {
+                beams[k] = (k === i) ? "begin" : (k === j ? "end" : "continue");
+            }
+        }
+
+        i = j + 1;
+    }
+
+    var xml = '<measure number="' + number + '">';
+
+    if (withAttributes) {
+        var clef = task.clef === "F"
+            ? "<sign>F</sign><line>4</line>"
+            : "<sign>G</sign><line>2</line>";
+
+        xml +=
+            "<attributes>" +
+            "<divisions>4</divisions>" +
+            "<key><fifths>" + (task.fifths || 0) + "</fifths></key>" +
+            "<time><beats>" + time.beats + "</beats>" +
+            "<beat-type>" + time.beatType + "</beat-type></time>" +
+            "<clef>" + clef + "</clef>" +
+            "</attributes>";
+    }
+
+    notes.forEach(function (note, index) {
+        var p = note.pitch;
+
+        xml +=
+            "<note><pitch><step>" + p.step + "</step>" +
+            (p.alter ? "<alter>" + p.alter + "</alter>" : "") +
+            "<octave>" + p.octave + "</octave></pitch>" +
+            "<duration>" + note.dur.divisions + "</duration>" +
+            "<type>" + TYPE_NAME[note.dur.base] + "</type>" +
+            (note.dur.dotted ? "<dot/>" : "") +
+            (p.alter ? "<accidental>" + (p.alter > 0 ? "sharp" : "flat") + "</accidental>" : "") +
+            (beams[index] ? '<beam number="1">' + beams[index] + "</beam>" : "") +
+            "</note>";
+    });
+
+    return xml + "</measure>";
+}
+
+function wrapScore(measureList) {
+    return (
+        '<?xml version="1.0" encoding="UTF-8"?>' +
+        '<score-partwise version="3.1">' +
+        '<part-list><score-part id="P1"><part-name></part-name></score-part></part-list>' +
+        '<part id="P1">' + measureList.join("") + "</part>" +
+        "</score-partwise>"
+    );
+}
+
+/* END PURE */
+
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    /*
+     * =================================================
+     * STATE
+     * =================================================
+     */
+    let toolkitRef = null;
+    let tasks = [];
+    let task = null;
+
+    /* One entry per pitch sequence: { label, pitches, rhythms, variants: [{ xml, svg }] } */
+    let seqs = [];
+
+    /* choices[i] = index of the rhythm picked for sequence i, or null */
+    let choices = [];
+
+    /* The sequence currently being chosen, or null when every one is done */
+    let current = 0;
+
+    function byId(id) {
+        return document.getElementById(id);
+    }
+
+    function isComplete() {
+        return choices.every(function (c) { return c !== null; });
+    }
+
+    function hasAnyChoice() {
+        return choices.some(function (c) { return c !== null; });
+    }
+
+    /*
+     * =================================================
+     * COMBINE THE CHOSEN MEASURES INTO ONE SCORE
+     * (the "copy the measures" step: each pick is
+     * copied into the melody in order)
+     * =================================================
+     */
+    function combinedXML() {
+        const measures = [];
+
+        seqs.forEach(function (seq, i) {
+            if (choices[i] === null) {
+                return;
+            }
+
+            measures.push(
+                measureXML(
+                    task,
+                    seq.pitches,
+                    seq.rhythms[choices[i]],
+                    measures.length + 1,
+                    measures.length === 0
+                )
+            );
+        });
+
+        return measures.length ? wrapScore(measures) : null;
+    }
+
+    /*
+     * =================================================
+     * LOAD THE TASK CATALOG
+     * =================================================
+     */
+    MusicEngine.ready(function (toolkit) {
+        toolkitRef = toolkit;
+        MusicEngine.attachHighlighting(toolkit);
+
+        fetch("rhythm-choice-tasks.json")
+            .then(function (response) {
+                if (!response.ok) {
+                    throw new Error("HTTP " + response.status);
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                tasks = data;
+
+                const selector = byId("taskSelector");
+
+                tasks.forEach(function (entry, index) {
+                    const option = document.createElement("option");
+                    option.value = index;
+                    option.textContent = entry.title;
+                    selector.appendChild(option);
+                });
+
+                selector.addEventListener("change", function () {
+                    startTask(Number(selector.value));
+                });
+
+                if (tasks.length > 0) {
+                    startTask(0);
+                }
+            })
+            .catch(function (error) {
+                console.error(error);
+                byId("loadError").textContent =
+                    "Could not load rhythm-choice-tasks.json.";
+            });
+    });
+
+    /*
+     * =================================================
+     * START A TASK
+     * =================================================
+     */
+    function startTask(index) {
+        task = tasks[index];
+        byId("loadError").textContent = "";
+
+        try {
+            seqs = task.sequences.map(function (seq) {
+                return {
+                    label: seq.label || seq.pitches.join(" "),
+                    pitches: seq.pitches,
+                    rhythms: seq.rhythms,
+                    variants: seq.rhythms.map(function (rhythm) {
+                        return {
+                            xml: wrapScore([
+                                measureXML(task, seq.pitches, rhythm, 1, true)
+                            ]),
+                            svg: null
+                        };
+                    })
+                };
+            });
+        }
+        catch (error) {
+            console.error(error);
+            byId("loadError").textContent =
+                "This task has an error: " + error.message;
+            seqs = [];
+            choices = [];
+            current = null;
+            renderAll();
+            return;
+        }
+
+        /*
+         * Render every rhythm card in ONE call so they all
+         * share the same notation scale (same approach as
+         * the puzzle page).
+         */
+        const flatXML = [];
+
+        seqs.forEach(function (seq) {
+            seq.variants.forEach(function (variant) {
+                flatXML.push(variant.xml);
+            });
+        });
+
+        let svgList = [];
+
+        try {
+            svgList = MusicEngine.renderMiniMeasureSet(flatXML);
+        }
+        catch (error) {
+            console.error(error);
+        }
+
+        let n = 0;
+
+        seqs.forEach(function (seq) {
+            seq.variants.forEach(function (variant) {
+                variant.svg = svgList[n] || null;
+                n++;
+            });
+        });
+
+        resetMelody();
+    }
+
+    function resetMelody() {
+        MusicEngine.stopMIDI();
+        choices = seqs.map(function () { return null; });
+        current = seqs.length ? 0 : null;
+        renderAll();
+    }
+
+    /*
+     * =================================================
+     * RENDERING
+     * =================================================
+     */
+    function renderAll() {
+        renderStep();
+        renderMelody();
+        renderFinal();
+
+        byId("playButton").disabled = !hasAnyChoice();
+    }
+
+    function renderStep() {
+        const area = byId("choicesArea");
+
+        if (current === null) {
+            area.style.display = "none";
+            return;
+        }
+
+        area.style.display = "block";
+
+        const seq = seqs[current];
+
+        byId("stepCount").textContent =
+            "Part " + (current + 1) + " of " + seqs.length;
+        byId("stepLabel").textContent = seq.label;
+
+        const box = byId("choices");
+        box.innerHTML = "";
+
+        seq.variants.forEach(function (variant, j) {
+            const card = document.createElement("div");
+
+            card.className = "measurePiece";
+            card.tabIndex = 0;
+            card.setAttribute("role", "button");
+            card.setAttribute("aria-label", "Rhythm " + (j + 1) + ": choose");
+
+            if (choices[current] === j) {
+                card.classList.add("chosen");
+            }
+
+            if (variant.svg) {
+                card.innerHTML = variant.svg;
+            }
+            else {
+                card.textContent = "Rhythm " + (j + 1);
+            }
+
+            const playButton = document.createElement("button");
+
+            playButton.className = "playPieceButton";
+            playButton.type = "button";
+            playButton.title = "Listen to this rhythm";
+            playButton.textContent = "▶";
+
+            /* Listening must not also choose the card */
+            playButton.addEventListener("click", function (event) {
+                event.stopPropagation();
+                MusicEngine.playMusicXML(variant.xml);
+            });
+            playButton.addEventListener("keydown", function (event) {
+                event.stopPropagation();
+            });
+
+            card.appendChild(playButton);
+
+            card.addEventListener("click", function () {
+                choose(j);
+            });
+            card.addEventListener("keydown", function (event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    choose(j);
+                }
+            });
+
+            box.appendChild(card);
+        });
+    }
+
+    function renderMelody() {
+        const strip = byId("melody");
+        strip.innerHTML = "";
+
+        seqs.forEach(function (seq, i) {
+            const wrap = document.createElement("div");
+            wrap.className = "slotWrap";
+
+            const slot = document.createElement("div");
+            slot.className = "slot";
+            slot.tabIndex = 0;
+            slot.setAttribute("role", "button");
+            slot.setAttribute("aria-label", "Part " + (i + 1) + ": " + seq.label);
+
+            if (i === current) {
+                slot.classList.add("active");
+            }
+
+            if (choices[i] !== null) {
+                slot.classList.add("filled");
+
+                const svg = seq.variants[choices[i]].svg;
+
+                if (svg) {
+                    slot.innerHTML = svg;
+                }
+                else {
+                    slot.textContent = "Rhythm " + (choices[i] + 1);
+                }
+            }
+            else {
+                slot.textContent = "?";
+            }
+
+            function open() {
+                current = i;
+                renderAll();
+            }
+
+            slot.addEventListener("click", open);
+            slot.addEventListener("keydown", function (event) {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    open();
+                }
+            });
+
+            const label = document.createElement("div");
+            label.className = "slotLabel";
+            label.textContent = seq.label;
+
+            wrap.appendChild(slot);
+            wrap.appendChild(label);
+            strip.appendChild(wrap);
+        });
+    }
+
+    function renderFinal() {
+        const message = byId("finalMessage");
+        const score = byId("finalScore");
+
+        if (!seqs.length || !isComplete()) {
+            message.textContent = "";
+            score.innerHTML = "";
+            score.style.display = "none";
+            return;
+        }
+
+        message.textContent = "Your melody is ready! Press PLAY MELODY.";
+        score.style.display = "block";
+
+        try {
+            MusicEngine.renderScore(toolkitRef, combinedXML(), "finalScore");
+        }
+        catch (error) {
+            console.error(error);
+            score.style.display = "none";
+        }
+    }
+
+    /*
+     * =================================================
+     * CHOOSING A RHYTHM
+     * =================================================
+     */
+    function choose(variantIndex) {
+        choices[current] = variantIndex;
+
+        /*
+         * Move on to the next part that has no choice yet,
+         * looking forward first and then wrapping around
+         * (so re-choosing an earlier part sends the child
+         * back to where they left off).
+         */
+        let next = null;
+
+        for (let step = 1; step <= seqs.length; step++) {
+            const candidate = (current + step) % seqs.length;
+
+            if (choices[candidate] === null) {
+                next = candidate;
+                break;
+            }
+        }
+
+        current = next;
+        renderAll();
+    }
+
+    /*
+     * =================================================
+     * BUTTONS
+     * =================================================
+     */
+    byId("playButton").addEventListener("click", function () {
+        const xml = combinedXML();
+
+        if (!xml) {
+            return;
+        }
+
+        /*
+         * A finished melody is shown as a score, so play it
+         * through the main player to get the red note
+         * highlighting used on the other pages.
+         */
+        if (isComplete() && toolkitRef) {
+            try {
+                renderFinal();
+                MusicEngine.playMIDI(toolkitRef);
+                return;
+            }
+            catch (error) {
+                console.error(error);
+            }
+        }
+
+        MusicEngine.playMusicXML(xml);
+    });
+
+    byId("stopButton").addEventListener("click", function () {
+        MusicEngine.stopMIDI();
+    });
+
+    byId("restartButton").addEventListener("click", function () {
+        resetMelody();
+    });
+});
+</script>
+
+</body>
+</html>

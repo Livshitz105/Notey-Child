@@ -212,6 +212,37 @@
             fill: red;
         }
 
+    
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
     </style>
 
 </head>
@@ -221,6 +252,15 @@
 
     <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
     <div class="appSubtitle">LITTLE MUSIC READER</div>
+
+    <nav class="activityNav">
+        <a href="index.html">🎵 Listen &amp; Follow</a>
+        <a href="index_puzzle.html" class="current">🧩 Puzzle</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
+        <a href="index_find_in_score.html">🔍 Find It</a>
+        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
+        <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
+    </nav>
 
     <label for="melodySelector">Melody:</label>
     <select id="melodySelector"></select>
