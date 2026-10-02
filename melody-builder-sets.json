@@ -1,0 +1,24 @@
+[
+    {
+        "id": "demo-melody-builder",
+        "title": "Build Your Own Melody",
+        "slots": [
+            {
+                "label": "Phrase 1 (do-la-mi-re-do)",
+                "options": [
+                    { "label": "A", "file": "phrase1_rhythmA.musicxml" },
+                    { "label": "B", "file": "phrase1_rhythmB.musicxml" },
+                    { "label": "C", "file": "phrase1_rhythmC.musicxml" }
+                ]
+            },
+            {
+                "label": "Phrase 2 (fa-mi-re-do)",
+                "options": [
+                    { "label": "A", "file": "phrase2_rhythmA.musicxml" },
+                    { "label": "B", "file": "phrase2_rhythmB.musicxml" },
+                    { "label": "C", "file": "phrase2_rhythmC.musicxml" }
+                ]
+            }
+        ]
+    }
+]
