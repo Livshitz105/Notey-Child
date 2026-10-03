@@ -102,6 +102,81 @@ window.MusicEngine = (function () {
 
 
     /*
+     * Returns an array with one "sound signature" string per
+     * measure, built purely from each measure's actual pitches
+     * and rhythms (notes and rests) - ignoring things like
+     * formatting, lyrics, or directions that don't affect how it
+     * sounds or looks musically. Two measures with the identical
+     * notes and rhythm get the identical signature, regardless of
+     * where in the piece they sit. Used for activities (like
+     * "find it in the score") where a piece's repeated measures
+     * should all count as valid answers, not just the one that
+     * happened to be played.
+     */
+    function getMeasureSignatures(musicXML) {
+
+        const parser = new DOMParser();
+
+        const doc = parser.parseFromString(musicXML, "application/xml");
+
+        const part = doc.querySelector("part");
+
+        if (!part) {
+            return [];
+        }
+
+        const measures =
+            Array.from(part.querySelectorAll(":scope > measure"));
+
+        return measures.map(function (measure) {
+
+            const notes =
+                Array.from(measure.querySelectorAll(":scope > note"));
+
+            const noteSignatures = notes.map(function (note) {
+
+                const duration = note.querySelector("duration");
+                const type = note.querySelector("type");
+
+                const durationPart =
+                    (type ? type.textContent : "?") + ":" +
+                    (duration ? duration.textContent : "?");
+
+                const isRest = note.querySelector("rest") !== null;
+
+                if (isRest) {
+                    return "rest:" + durationPart;
+                }
+
+                const pitch = note.querySelector("pitch");
+
+                if (!pitch) {
+                    return "?:" + durationPart;
+                }
+
+                const step = pitch.querySelector("step");
+                const alter = pitch.querySelector("alter");
+                const octave = pitch.querySelector("octave");
+
+                const isChordNote =
+                    note.querySelector(":scope > chord") !== null;
+
+                return (isChordNote ? "+" : "") +
+                    (step ? step.textContent : "?") +
+                    (alter ? alter.textContent : "0") +
+                    (octave ? octave.textContent : "?") + ":" +
+                    durationPart;
+
+            });
+
+            return noteSignatures.join(",");
+
+        });
+
+    }
+
+
+    /*
      * =================================================
      * RENDERING THE FULL SCORE
      * =================================================
@@ -200,6 +275,18 @@ window.MusicEngine = (function () {
                 .forEach(function (note) {
                     note.classList.remove("playing");
                 });
+
+            /*
+             * MIDIjs sends a final callback with status "finished"
+             * once playback ends. Without checking for it, the
+             * code below would look up "whatever is sounding at
+             * the final timestamp" - which is still the last note
+             * - and re-highlight it with nothing ever coming along
+             * afterward to clear it again. Stop here instead.
+             */
+            if (event.status === "finished") {
+                return;
+            }
 
             /*
              * MIDIjs time = seconds, Verovio time = milliseconds.
@@ -931,6 +1018,7 @@ window.MusicEngine = (function () {
         loadMusicXML: loadMusicXML,
         loadCatalog: loadCatalog,
         countMeasures: countMeasures,
+        getMeasureSignatures: getMeasureSignatures,
         renderScore: renderScore,
         playMIDI: playMIDI,
         playMusicXML: playMusicXML,

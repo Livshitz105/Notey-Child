@@ -183,6 +183,7 @@
         <a href="index_puzzle.html">🧩 Puzzle</a>
         <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
         <a href="index_find_in_score.html" class="current">🔍 Find It</a>
+        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
     </nav>
 
@@ -209,6 +210,32 @@
 
             let currentExcerpt = null;
 
+            /*
+             * One "sound signature" string per measure of the
+             * current melody - used so that identical repeated
+             * measures (e.g. measures 2, 4, 8, 16 of Silent Night)
+             * all count as correct answers, not just whichever one
+             * happened to be picked as the excerpt.
+             */
+            let measureSignatures = [];
+
+
+            /*
+             * The signature of a window of `length` consecutive
+             * measures starting at measure `start` (1-indexed).
+             */
+            function windowSignature(start, length) {
+
+                const parts = [];
+
+                for (let i = start; i < start + length; i++) {
+                    parts.push(measureSignatures[i - 1]);
+                }
+
+                return parts.join(" | ");
+
+            }
+
 
             /*
              * =================================================
@@ -222,8 +249,7 @@
                     return;
                 }
 
-                const totalMeasures =
-                    MusicEngine.countMeasures(window.originalMusicXML);
+                const totalMeasures = measureSignatures.length;
 
                 if (totalMeasures < 1) {
                     currentExcerpt = null;
@@ -244,7 +270,11 @@
 
                 const start = 1 + Math.floor(Math.random() * maxStart);
 
-                currentExcerpt = { start: start, length: length };
+                currentExcerpt = {
+                    start: start,
+                    length: length,
+                    signature: windowSignature(start, length)
+                };
 
                 clearMeasureFlashes();
 
@@ -316,6 +346,45 @@
 
 
             /*
+             * A click on `measureNumber` counts as correct if
+             * ANY window of the excerpt's length that CONTAINS
+             * that measure has the same sound signature as the
+             * excerpt that was played - not just the one specific
+             * window that was originally picked. This is what
+             * makes repeated measures (like Silent Night's
+             * measures 2, 4, 8, 16, which are all identical) all
+             * valid answers, regardless of which one was actually
+             * played.
+             */
+            function measureSoundsLikeExcerpt(measureNumber) {
+
+                const length = currentExcerpt.length;
+
+                const totalMeasures = measureSignatures.length;
+
+                const minStart =
+                    Math.max(1, measureNumber - length + 1);
+
+                const maxStart =
+                    Math.min(
+                        measureNumber, totalMeasures - length + 1
+                    );
+
+                for (let start = minStart; start <= maxStart; start++) {
+
+                    if (windowSignature(start, length) ===
+                        currentExcerpt.signature) {
+                        return true;
+                    }
+
+                }
+
+                return false;
+
+            }
+
+
+            /*
              * =================================================
              * HANDLE A CLICK ON A MEASURE
              * =================================================
@@ -328,9 +397,7 @@
                 }
 
                 const isCorrect =
-                    measureNumber >= currentExcerpt.start &&
-                    measureNumber <=
-                        currentExcerpt.start + currentExcerpt.length - 1;
+                    measureSoundsLikeExcerpt(measureNumber);
 
                 if (isCorrect) {
 
@@ -382,6 +449,9 @@
                     .then(function (musicXML) {
 
                         window.originalMusicXML = musicXML;
+
+                        measureSignatures =
+                            MusicEngine.getMeasureSignatures(musicXML);
 
                         MusicEngine.renderScore(toolkit, musicXML, "score");
 

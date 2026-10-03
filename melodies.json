@@ -49,6 +49,13 @@
        "title": "Mozart_Quartet_g_moll",
        "composer": "Wolfgang Amadeus Mozart",
        "file": "mozart_quartet_g.musicxml"  
+    },
+
+    {
+        "id": "Beethoven_Trio",
+       "title": "Beethoven_trio_Archduke",
+       "composer": "Ludwig van Beethoven",
+       "file": "beethoven_trio.musicxml"  
     }
 
 ]
