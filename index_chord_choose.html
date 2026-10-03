@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Notey Child — a little music reader – Listen and Choose</title>
+    <title>Notey Child — a little music reader – Choose a Chord</title>
 
     <!-- Verovio -->
     <script
@@ -215,19 +215,19 @@
     <nav class="activityNav">
         <a href="index.html">🎵 Listen &amp; Follow</a>
         <a href="index_puzzle.html">🧩 Puzzle</a>
-        <a href="index_listen_choose.html" class="current">🎧 Listen &amp; Choose</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
         <a href="index_find_in_score.html">🔍 Find It</a>
         <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
+        <a href="index_chord_choose.html" class="current">🎹 Choose a Chord</a>
     </nav>
 
-    <label for="taskSelector">Exercise:</label>
+    <label for="taskSelector">Chord:</label>
     <select id="taskSelector"></select>
 
     <br><br>
 
-    <p id="instructions">Click "PLAY", listen and choose the correct notation.</p>
+    <p id="instructions">Click "PLAY", listen and choose the matching chord.</p>
 
     <button id="playButton">▶ PLAY</button>
     <button id="stopButton">■ Stop</button>
@@ -488,7 +488,7 @@
 
             MusicEngine.ready(function () {
 
-                MusicEngine.loadCatalog("listening-tasks.json")
+                MusicEngine.loadCatalog("chord-listening-tasks.json")
                     .then(function (tasks) {
 
                         const selector =

@@ -1,0 +1,11 @@
+[
+    {
+        "id": "f-major-t46",
+        "title": "F major, tonic in 6/4 position",
+        "variants": [
+            { "label": "A", "file": "f_dur_t46.musicxml", "correct": true },
+            { "label": "B", "file": "f_dur_root.musicxml", "correct": false },
+            { "label": "C", "file": "d_moll_grundstellung.musicxml", "correct": false }
+        ]
+    }
+]
