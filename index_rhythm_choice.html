@@ -101,8 +101,8 @@
         .variantTile {
             position: relative;
 
-            width: 480px;
-            height: 300px;
+            width: 220px;
+            height: 160px;
 
             border: 4px solid #888;
             border-radius: 12px;
@@ -120,10 +120,10 @@
             overflow: hidden;
         }
 
-        .variantTile > svg {
-            width: 100%;
-            height: 100%;
-            display: block;
+        .variantLabel {
+            font-size: 42px;
+            font-weight: bold;
+            color: #333;
         }
 
         .variantTile.correctTile {
@@ -311,16 +311,20 @@
                     .then(function (xmlList) {
 
                         /*
-                         * "g.system" instead of "g.measure" -
-                         * a variant may be more than one measure
-                         * long, so we crop around the whole line
-                         * of music, not just its first measure.
+                         * Deliberately NO notation preview here,
+                         * unlike Listen & Choose or Choose a
+                         * Chord. Two reasons: (1) a longer, several
+                         * -measure excerpt can't be rendered
+                         * legibly at a shared small tile size -
+                         * that's a hard structural limit, not a
+                         * sizing tweak. (2) More importantly, this
+                         * task is specifically about recognizing a
+                         * time signature BY EAR - rendering the
+                         * notation would print the actual time
+                         * signature glyph on the tile, handing the
+                         * answer away for free. A plain text label
+                         * plus a play button keeps the task honest.
                          */
-                        const svgList =
-                            MusicEngine.renderMiniMeasureSet(
-                                xmlList, "g.system"
-                            );
-
                         container.innerHTML = "";
 
                         shuffledVariants.forEach(function (variant, index) {
@@ -330,14 +334,15 @@
 
                             tile.className = "variantTile";
 
-                            if (svgList[index]) {
-                                tile.innerHTML = svgList[index];
-                            }
-                            else {
-                                tile.textContent =
-                                    variant.label ||
-                                    ("Option " + (index + 1));
-                            }
+                            const labelDiv =
+                                document.createElement("div");
+
+                            labelDiv.className = "variantLabel";
+
+                            labelDiv.textContent =
+                                variant.label || ("Option " + (index + 1));
+
+                            tile.appendChild(labelDiv);
 
                             if (variant.correct) {
                                 currentTask.correctXML = xmlList[index];
