@@ -1,86 +1,10 @@
 [
-  {
-    "title": "Four-beat phrases (4/4)",
-    "time": "4/4",
-    "clef": "G",
-    "sequences": [
-      {
-        "label": "do – la – mi – re – do",
-        "pitches": ["C5", "A4", "E5", "D5", "C5"],
-        "rhythms": [
-          ["q", "q", "q", "e", "e"],
-          ["q.", "e", "q", "e", "e"],
-          ["q", "q", "e", "e", "q"],
-          ["h", "e", "e", "e", "e"]
+    {
+        "id": "meter-comparison-demo",
+        "title": "Which time signature do you hear? (demo)",
+        "variants": [
+            { "label": "2/4", "file": "meter_2_4.musicxml", "correct": true },
+            { "label": "3/4", "file": "meter_3_4.musicxml", "correct": false }
         ]
-      },
-      {
-        "label": "mi – re – do – re – mi",
-        "pitches": ["E4", "D4", "C4", "D4", "E4"],
-        "rhythms": [
-          ["e", "e", "q", "q", "q"],
-          ["q", "e", "e", "q", "q"],
-          ["q.", "e", "q", "e", "e"],
-          ["e", "e", "e", "e", "h"]
-        ]
-      },
-      {
-        "label": "sol – mi – sol – la – sol",
-        "pitches": ["G4", "E4", "G4", "A4", "G4"],
-        "rhythms": [
-          ["q", "q", "q", "e", "e"],
-          ["h", "e", "e", "e", "e"],
-          ["q", "e", "e", "q", "q"],
-          ["e", "e", "q", "q", "q"]
-        ]
-      },
-      {
-        "label": "do – mi – sol – mi – do",
-        "pitches": ["C4", "E4", "G4", "E4", "C4"],
-        "rhythms": [
-          ["q", "q", "e", "e", "q"],
-          ["q.", "e", "q", "e", "e"],
-          ["e", "e", "e", "e", "h"],
-          ["q", "q", "q", "e", "e"]
-        ]
-      }
-    ]
-  },
-  {
-    "title": "Waltz phrases (3/4)",
-    "time": "3/4",
-    "clef": "G",
-    "sequences": [
-      {
-        "label": "do – mi – sol – mi",
-        "pitches": ["C4", "E4", "G4", "E4"],
-        "rhythms": [
-          ["q", "q", "e", "e"],
-          ["q", "e", "e", "q"],
-          ["e", "e", "q", "q"],
-          ["q.", "e", "e", "e"]
-        ]
-      },
-      {
-        "label": "re – fa – la – fa",
-        "pitches": ["D4", "F4", "A4", "F4"],
-        "rhythms": [
-          ["e", "e", "q", "q"],
-          ["q.", "e", "e", "e"],
-          ["q", "q", "e", "e"],
-          ["q", "e", "e", "q"]
-        ]
-      },
-      {
-        "label": "mi – re – do – do",
-        "pitches": ["E4", "D4", "C4", "C4"],
-        "rhythms": [
-          ["q", "e", "e", "q"],
-          ["q", "q", "e", "e"],
-          ["q.", "e", "e", "e"],
-          ["e", "e", "q", "q"]
-        ]
-      }
-    ]
-  }
+    }
 ]
