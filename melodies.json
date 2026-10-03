@@ -56,6 +56,13 @@
        "title": "Beethoven_trio_Archduke",
        "composer": "Ludwig van Beethoven",
        "file": "beethoven_trio.musicxml"  
+    },
+
+    {
+        "id": "rosenkavalier",
+       "title": "Waltz_from_Rosenkavalier",
+       "composer": "Richard Strauss",
+       "file": "rosenkavalier_waltz.musicxml"  
     }
 
 ]
