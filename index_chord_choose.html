@@ -139,6 +139,15 @@
             opacity: 0.85;
         }
 
+        /* Colored note highlighting during playback */
+        .variantTile g.note {
+            fill: black;
+        }
+
+        .variantTile g.note.playing {
+            fill: red;
+        }
+
         .playPieceButton {
             position: absolute;
             bottom: 10px;
@@ -329,9 +338,21 @@
                          * a variant may be more than one measure
                          * long, so we crop around the whole line
                          * of music, not just its first measure.
+                         *
+                         * The "...WithToolkits" version keeps each
+                         * tile's own Verovio toolkit instance alive
+                         * (instead of discarding it after
+                         * rendering), so that later, when that
+                         * specific tile's preview is played, we can
+                         * highlight the exact notes sounding in
+                         * THAT tile - a fresh toolkit loaded with
+                         * the same XML is not guaranteed to produce
+                         * matching note IDs, so re-using the same
+                         * instance that did the rendering is what
+                         * keeps playback and highlighting in sync.
                          */
-                        const svgList =
-                            MusicEngine.renderMiniMeasureSet(
+                        const rendered =
+                            MusicEngine.renderMiniMeasureSetWithToolkits(
                                 xmlList, "g.system"
                             );
 
@@ -344,8 +365,8 @@
 
                             tile.className = "variantTile";
 
-                            if (svgList[index]) {
-                                tile.innerHTML = svgList[index];
+                            if (rendered[index].svg) {
+                                tile.innerHTML = rendered[index].svg;
                             }
                             else {
                                 tile.textContent =
@@ -359,14 +380,17 @@
 
                             /*
                              * Let a child listen to what THIS
-                             * option actually sounds like, and
-                             * compare it to what PLAY (the target)
-                             * played - not just judge by eye.
-                             * stopPropagation keeps this from also
-                             * triggering the tile's own click
-                             * (which registers a choice/guess).
+                             * option actually sounds like, with its
+                             * notes coloring red in sync as they
+                             * sound - and compare it to what PLAY
+                             * (the target) played. stopPropagation
+                             * keeps this from also triggering the
+                             * tile's own click (which registers a
+                             * choice/guess).
                              */
-                            if (xmlList[index]) {
+                            const optionToolkit = rendered[index].toolkit;
+
+                            if (optionToolkit) {
 
                                 const playButton =
                                     document.createElement("button");
@@ -382,8 +406,12 @@
 
                                         event.stopPropagation();
 
-                                        MusicEngine.playMusicXML(
-                                            xmlList[index]
+                                        MusicEngine.attachHighlighting(
+                                            optionToolkit
+                                        );
+
+                                        MusicEngine.playMIDI(
+                                            optionToolkit
                                         );
 
                                     }

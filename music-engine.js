@@ -786,7 +786,8 @@ window.MusicEngine = (function () {
         return {
             svg: svg,
             measure: measure,
-            box: box
+            box: box,
+            toolkit: miniToolkit
         };
 
     }
@@ -844,7 +845,69 @@ window.MusicEngine = (function () {
      */
     function renderMiniMeasureSet(miniXMLList, anchorSelector) {
 
-        const prepared = miniXMLList.map(function (xml) {
+        const prepared = prepareAllForSharedScale(
+            miniXMLList, anchorSelector
+        );
+
+        const canvas = computeSharedCanvas(prepared);
+
+        return prepared.map(function (p) {
+
+            if (!p) {
+                return null;
+            }
+
+            return finalizeMiniMeasure(
+                p, canvas.width, canvas.height
+            );
+
+        });
+
+    }
+
+
+    /*
+     * Same as renderMiniMeasureSet, but ALSO returns each
+     * snippet's own toolkit instance alongside its finished SVG,
+     * instead of discarding it. Needed anywhere playback needs to
+     * highlight notes in sync with a SPECIFIC rendered tile - e.g.
+     * Choose a Chord's answer options - since a fresh toolkit's
+     * note IDs are only guaranteed to match a rendering produced
+     * by that EXACT same toolkit instance, not a different one
+     * loaded with identical XML. Returns an array of
+     * { svg, toolkit } (both null for an entry that failed).
+     */
+    function renderMiniMeasureSetWithToolkits(miniXMLList, anchorSelector) {
+
+        const prepared = prepareAllForSharedScale(
+            miniXMLList, anchorSelector
+        );
+
+        const canvas = computeSharedCanvas(prepared);
+
+        return prepared.map(function (p) {
+
+            if (!p) {
+                return { svg: null, toolkit: null };
+            }
+
+            return {
+                svg: finalizeMiniMeasure(p, canvas.width, canvas.height),
+                toolkit: p.toolkit
+            };
+
+        });
+
+    }
+
+
+    /*
+     * Shared helper for both functions above: prepares every
+     * snippet (without finalizing a size yet).
+     */
+    function prepareAllForSharedScale(miniXMLList, anchorSelector) {
+
+        return miniXMLList.map(function (xml) {
 
             try {
                 return prepareMiniMeasure(xml, anchorSelector);
@@ -855,6 +918,15 @@ window.MusicEngine = (function () {
             }
 
         });
+
+    }
+
+
+    /*
+     * Shared helper: the common canvas size for a whole set,
+     * based on whichever prepared snippet is largest.
+     */
+    function computeSharedCanvas(prepared) {
 
         const validBoxes = prepared
             .filter(function (p) {
@@ -882,23 +954,15 @@ window.MusicEngine = (function () {
 
         /*
          * Padding is proportional to the LARGEST piece in this
-         * puzzle - every piece then shares that same canvas.
+         * set - every piece then shares that same canvas.
          */
         const paddingX = Math.max(maxContentWidth * 0.06, 20);
         const paddingY = Math.max(maxContentHeight * 0.12, 20);
 
-        const canvasWidth = maxContentWidth + paddingX * 2;
-        const canvasHeight = maxContentHeight + paddingY * 2;
-
-        return prepared.map(function (p) {
-
-            if (!p) {
-                return null;
-            }
-
-            return finalizeMiniMeasure(p, canvasWidth, canvasHeight);
-
-        });
+        return {
+            width: maxContentWidth + paddingX * 2,
+            height: maxContentHeight + paddingY * 2
+        };
 
     }
 
@@ -1028,6 +1092,7 @@ window.MusicEngine = (function () {
         makeExcerptMusicXML: makeExcerptMusicXML,
         makeReorderedMusicXML: makeReorderedMusicXML,
         renderMiniMeasureSet: renderMiniMeasureSet,
+        renderMiniMeasureSetWithToolkits: renderMiniMeasureSetWithToolkits,
         combineMeasures: combineMeasures
     };
 

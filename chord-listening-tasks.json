@@ -1,11 +1,51 @@
 [
     {
         "id": "f-major-t46",
-        "title": "Which notes make up this chord?",
+        "title": "F major, tonic in 6/4 position",
         "promptFile": "f_dur_t46_chord.musicxml",
         "variants": [
             { "label": "A", "file": "f_dur_t46_notes.musicxml", "correct": true },
             { "label": "B", "file": "f_dur_root_notes.musicxml", "correct": false },
+            { "label": "C", "file": "d_moll_grundstellung_notes.musicxml", "correct": false }
+        ]
+    },
+    {
+        "id": "c-major-7",
+        "title": "C major 7th chord",
+        "promptFile": "Cmaj7_chord.musicxml",
+        "variants": [
+            { "label": "A", "file": "Cmaj7_notes.musicxml", "correct": true },
+            { "label": "B", "file": "f_dur_d57_notes.musicxml", "correct": false },
+            { "label": "C", "file": "Cdim7_notes.musicxml", "correct": false }
+        ]
+    },
+    {
+        "id": "c-diminished-7",
+        "title": "C diminished 7th chord",
+        "promptFile": "Cdim7_chord.musicxml",
+        "variants": [
+            { "label": "A", "file": "Cdim7_notes.musicxml", "correct": true },
+            { "label": "B", "file": "Cmaj7_notes.musicxml", "correct": false },
+            { "label": "C", "file": "f_dur_d57_notes.musicxml", "correct": false }
+        ]
+    },
+    {
+        "id": "f-dominant-7",
+        "title": "Dominant 7th chord of F major",
+        "promptFile": "f_dur_d57_chord.musicxml",
+        "variants": [
+            { "label": "A", "file": "f_dur_d57_notes.musicxml", "correct": true },
+            { "label": "B", "file": "Cmaj7_notes.musicxml", "correct": false },
+            { "label": "C", "file": "f_moll_6_C_notes.musicxml", "correct": false }
+        ]
+    },
+    {
+        "id": "f-minor-6-c",
+        "title": "F minor, 6th position over C",
+        "promptFile": "f_moll_6_C_chord.musicxml",
+        "variants": [
+            { "label": "A", "file": "f_moll_6_C_notes.musicxml", "correct": true },
+            { "label": "B", "file": "f_dur_t46_notes.musicxml", "correct": false },
             { "label": "C", "file": "d_moll_grundstellung_notes.musicxml", "correct": false }
         ]
     }
