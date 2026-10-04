@@ -1,11 +1,12 @@
 [
     {
         "id": "f-major-t46",
-        "title": "F major, tonic in 6/4 position",
+        "title": "Which notes make up this chord?",
+        "promptFile": "f_dur_t46_chord.musicxml",
         "variants": [
-            { "label": "A", "file": "f_dur_t46.musicxml", "correct": true },
-            { "label": "B", "file": "f_dur_root.musicxml", "correct": false },
-            { "label": "C", "file": "d_moll_grundstellung.musicxml", "correct": false }
+            { "label": "A", "file": "f_dur_t46_notes.musicxml", "correct": true },
+            { "label": "B", "file": "f_dur_root_notes.musicxml", "correct": false },
+            { "label": "C", "file": "d_moll_grundstellung_notes.musicxml", "correct": false }
         ]
     }
 ]

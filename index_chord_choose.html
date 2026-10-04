@@ -227,7 +227,7 @@
 
     <br><br>
 
-    <p id="instructions">Click "PLAY", listen and choose the matching chord.</p>
+    <p id="instructions">Click "PLAY" to hear a chord, then choose the notes that make it up.</p>
 
     <button id="playButton">▶ PLAY</button>
     <button id="stopButton">■ Stop</button>
@@ -285,13 +285,22 @@
             function loadTask(task) {
 
                 currentTask = task;
-                currentTask.correctXML = null;
+                currentTask.promptXML = null;
 
                 document.getElementById("choiceMessage").textContent = "";
 
                 const container = document.getElementById("variants");
 
                 container.innerHTML = "Loading exercise...";
+
+                /*
+                 * The prompt (what PLAY actually plays) is now a
+                 * dedicated file, entirely separate from the answer
+                 * options - unlike the old design, the thing played
+                 * is never one of the clickable choices itself.
+                 */
+                const promptPromise =
+                    MusicEngine.loadMusicXML(task.promptFile);
 
                 /*
                  * Shuffle the display order every time - otherwise
@@ -302,13 +311,18 @@
                  */
                 const shuffledVariants = shuffledCopy(task.variants);
 
-                const filePromises =
+                const variantPromises =
                     shuffledVariants.map(function (variant) {
                         return MusicEngine.loadMusicXML(variant.file);
                     });
 
-                Promise.all(filePromises)
-                    .then(function (xmlList) {
+                Promise.all([promptPromise, Promise.all(variantPromises)])
+                    .then(function (results) {
+
+                        const promptXML = results[0];
+                        const xmlList = results[1];
+
+                        currentTask.promptXML = promptXML;
 
                         /*
                          * "g.system" instead of "g.measure" -
@@ -337,10 +351,6 @@
                                 tile.textContent =
                                     variant.label ||
                                     ("Option " + (index + 1));
-                            }
-
-                            if (variant.correct) {
-                                currentTask.correctXML = xmlList[index];
                             }
 
                             tile.addEventListener("click", function () {
@@ -468,8 +478,8 @@
             document.getElementById("playButton")
                 .addEventListener("click", function () {
 
-                    if (currentTask && currentTask.correctXML) {
-                        MusicEngine.playMusicXML(currentTask.correctXML);
+                    if (currentTask && currentTask.promptXML) {
+                        MusicEngine.playMusicXML(currentTask.promptXML);
                     }
 
                 });
