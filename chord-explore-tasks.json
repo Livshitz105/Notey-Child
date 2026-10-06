@@ -4,5 +4,11 @@
     { "id": "c-diminished-7", "title": "C diminished 7th", "file": "Cdim7_chord.musicxml" },
     { "id": "f-dominant-7", "title": "Dominant 7th of F major", "file": "f_dur_d57_chord.musicxml" },
     { "id": "f-minor-6-c", "title": "F minor, 6th position over C", "file": "f_moll_6_C_chord.musicxml" },
-    { "id": "c-major-6", "title": "C major, 6th position", "file": "Cmaj6.musicxml" }
+    { "id": "c-major-6", "title": "C major, 6th position", "file": "Cmaj6.musicxml" },
+    { "id": "as-major-35", "title": "As major, triad", "file": "Asmaj35.musicxml" },
+    { "id": "c-major-35", "title": "C major, triad", "file": "Cmaj35.musicxml" },
+    { "id": "c-major-46", "title": "C major, 6/4 position", "file": "Cmaj46.musicxml" },
+    { "id": "c-minor-6", "title": "C minor, 6th position", "file": "Cmin6.musicxml" },
+    { "id": "c-minor-35", "title": "C minor, 6th triad", "file": "Cmin35.musicxml" },
+    { "id": "c-minor-46", "title": "C minor, 6/4 position", "file": "Cmin46.musicxml" }
 ]
