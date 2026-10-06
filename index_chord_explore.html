@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Notey Child — a little music reader – Chord Explorer</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        .appTitle {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin: 10px 0 0 0;
+        }
+
+        .appTitle span:nth-child(1) { color: #e6194b; }
+        .appTitle span:nth-child(2) { color: #f58231; }
+        .appTitle span:nth-child(3) { color: #ffcc00; }
+        .appTitle span:nth-child(4) { color: #3cb44b; }
+        .appTitle span:nth-child(5) { color: #17a2b8; }
+        .appTitle span:nth-child(6) { color: #4363d8; }
+        .appTitle span:nth-child(7) { color: #911eb4; }
+        .appTitle span:nth-child(8) { color: #e83e8c; }
+        .appTitle span:nth-child(9) { color: #fd7e14; }
+        .appTitle span:nth-child(10) { color: #20c997; }
+
+        .appSubtitle {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        /*
+         * Make the main PLAY button stand out from the rest -
+         * it's the button people reach for most.
+         */
+        #playButton {
+            background: #2e9e44;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 22px;
+            font-weight: bold;
+            padding: 12px 28px;
+        }
+
+        #playButton:hover {
+            background: #257a37;
+        }
+
+        /*
+         * The secondary action (hearing the notes one at a time)
+         * gets its own distinct color, same convention as "Show
+         * Melody" on the puzzle page.
+         */
+        #playNotesButton {
+            background: #8e44ad;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 20px;
+            font-weight: bold;
+            padding: 10px 22px;
+        }
+
+        #playNotesButton:hover {
+            background: #6f3690;
+        }
+
+        #chordSelector {
+            font-size: 24px;
+            padding: 10px 16px;
+            min-width: 340px;
+            border: 3px solid #4a90d9;
+            border-radius: 8px;
+        }
+
+        label[for="chordSelector"] {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #instructions {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        h2 {
+            margin-top: 35px;
+        }
+
+        .exploreTile {
+            width: 480px;
+            height: 300px;
+
+            border: 4px solid #888;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+
+            margin-top: 10px;
+        }
+
+        .exploreTile > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Colored note highlighting during playback */
+        .exploreTile g.note {
+            fill: black;
+        }
+
+        .exploreTile g.note.playing {
+            fill: red;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
+    <div class="appSubtitle">LITTLE MUSIC READER</div>
+
+    <nav class="activityNav">
+        <a href="index.html">🎵 Listen &amp; Follow</a>
+        <a href="index_puzzle.html">🧩 Puzzle</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
+        <a href="index_find_in_score.html">🔍 Find It</a>
+        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
+        <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
+        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
+        <a href="index_chord_explore.html" class="current">🔎 Chord Explorer</a>
+    </nav>
+
+    <label for="chordSelector">Chord:</label>
+    <select id="chordSelector"></select>
+
+    <p id="instructions">
+        See the chord, listen to it, then hear its notes one at a time.
+    </p>
+
+    <h2>The Chord</h2>
+    <div id="chordTile" class="exploreTile">Loading...</div>
+
+    <h2>The Notes (one at a time)</h2>
+    <div id="notesTile" class="exploreTile">Loading...</div>
+
+    <br>
+
+    <button id="playButton">▶ PLAY CHORD</button>
+    <button id="playNotesButton">▶ PLAY NOTES IN TURN</button>
+    <button id="stopButton">■ Stop</button>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            let chordToolkit = null;
+            let notesToolkit = null;
+
+
+            /*
+             * =================================================
+             * LOAD AND SHOW ONE CHORD
+             * =================================================
+             */
+
+            function loadChord(entry) {
+
+                document.getElementById("chordTile").innerHTML =
+                    "Loading...";
+
+                document.getElementById("notesTile").innerHTML =
+                    "Loading...";
+
+                chordToolkit = null;
+                notesToolkit = null;
+
+                MusicEngine.loadMusicXML(entry.file)
+                    .then(function (chordXML) {
+
+                        /*
+                         * The "play notes in turn" version is
+                         * generated automatically from the chord -
+                         * no need for a separate hand-authored file.
+                         */
+                        const notesXML =
+                            MusicEngine.arpeggiateChordXML(chordXML);
+
+                        /*
+                         * Both tiles rendered together so they
+                         * share one consistent scale, and so each
+                         * keeps its own toolkit alive for playback
+                         * with synced note highlighting.
+                         */
+                        const rendered =
+                            MusicEngine.renderMiniMeasureSetWithToolkits(
+                                [chordXML, notesXML], "g.system"
+                            );
+
+                        chordToolkit = rendered[0].toolkit;
+                        notesToolkit = rendered[1].toolkit;
+
+                        document.getElementById("chordTile").innerHTML =
+                            rendered[0].svg || "";
+
+                        document.getElementById("notesTile").innerHTML =
+                            rendered[1].svg || "";
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("chordTile").innerHTML =
+                            "<p>Could not load this chord.</p>";
+
+                        document.getElementById("notesTile").innerHTML =
+                            "";
+
+                    });
+
+            }
+
+
+            /*
+             * =================================================
+             * PLAY / STOP
+             * =================================================
+             */
+
+            document.getElementById("playButton")
+                .addEventListener("click", function () {
+
+                    if (chordToolkit) {
+                        MusicEngine.attachHighlighting(chordToolkit);
+                        MusicEngine.playMIDI(chordToolkit);
+                    }
+
+                });
+
+            document.getElementById("playNotesButton")
+                .addEventListener("click", function () {
+
+                    if (notesToolkit) {
+                        MusicEngine.attachHighlighting(notesToolkit);
+                        MusicEngine.playMIDI(notesToolkit);
+                    }
+
+                });
+
+            document.getElementById("stopButton")
+                .addEventListener("click", function () {
+                    MusicEngine.stopMIDI();
+                });
+
+
+            /*
+             * =================================================
+             * LOAD THE CHORD CATALOG
+             * =================================================
+             */
+
+            MusicEngine.ready(function () {
+
+                MusicEngine.loadCatalog("chord-explore-tasks.json")
+                    .then(function (chords) {
+
+                        const selector =
+                            document.getElementById("chordSelector");
+
+                        chords.forEach(function (entry, index) {
+
+                            const option =
+                                document.createElement("option");
+
+                            option.value = index;
+                            option.textContent = entry.title;
+
+                            selector.appendChild(option);
+
+                        });
+
+                        selector.addEventListener("change", function () {
+                            loadChord(chords[Number(selector.value)]);
+                        });
+
+                        if (chords.length > 0) {
+                            loadChord(chords[0]);
+                        }
+
+                    })
+                    .catch(function (error) {
+
+                        console.error(error);
+
+                        document.getElementById("chordTile").innerHTML =
+                            "<p>Could not load the chord catalog.</p>";
+
+                    });
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>

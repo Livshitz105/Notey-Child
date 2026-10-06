@@ -969,6 +969,208 @@ window.MusicEngine = (function () {
 
     /*
      * =================================================
+     * ARPEGGIATE A BLOCK CHORD
+     * =================================================
+     */
+
+    /*
+     * Takes a standalone one-measure MusicXML document containing
+     * a block chord (several simultaneous notes) and returns a
+     * NEW one-measure document with those same pitches played one
+     * at a time, low to high, as sequential quarter notes. Used
+     * so a simple chord file (just the solid chord, nothing else)
+     * is enough on its own - there's no need to separately
+     * hand-author a "played one at a time" version of every chord.
+     *
+     * Only the first simultaneous group of notes is used (so a
+     * chord written twice in a row, e.g. as two half notes, still
+     * arpeggiates just the three or four actual chord tones, not
+     * six or eight).
+     */
+    function arpeggiateChordXML(musicXML) {
+
+        const parser = new DOMParser();
+
+        const doc = parser.parseFromString(musicXML, "application/xml");
+
+        const part = doc.querySelector("part");
+
+        const firstMeasure = part.querySelector("measure");
+
+        const notes =
+            Array.from(firstMeasure.querySelectorAll(":scope > note"));
+
+        /*
+         * Find the first actual pitched note (skipping any rests
+         * that might precede it on another staff/voice).
+         */
+        let startIndex = -1;
+
+        for (let i = 0; i < notes.length; i++) {
+
+            if (notes[i].querySelector("pitch")) {
+                startIndex = i;
+                break;
+            }
+
+        }
+
+        if (startIndex === -1) {
+            throw new Error("No pitched notes found to arpeggiate.");
+        }
+
+        /*
+         * Collect that note plus every note immediately after it
+         * marked <chord/> - i.e. everything sounding at that same
+         * instant. Stops at the first note that ISN'T part of the
+         * same chord (e.g. the start of a repeat).
+         */
+        const chordNotes = [notes[startIndex]];
+
+        for (let i = startIndex + 1; i < notes.length; i++) {
+
+            if (notes[i].querySelector(":scope > chord")) {
+                chordNotes.push(notes[i]);
+            }
+            else {
+                break;
+            }
+
+        }
+
+        /*
+         * Sort low to high - the natural order for "spelling out"
+         * a chord.
+         */
+        const stepOrder = { C: 0, D: 1, E: 2, F: 3, G: 4, A: 5, B: 6 };
+
+        function pitchHeight(noteEl) {
+
+            const pitch = noteEl.querySelector("pitch");
+            const step = pitch.querySelector("step").textContent;
+            const alterEl = pitch.querySelector("alter");
+            const alter = alterEl ? parseInt(alterEl.textContent, 10) : 0;
+            const octave =
+                parseInt(pitch.querySelector("octave").textContent, 10);
+
+            return octave * 12 + stepOrder[step] + alter;
+
+        }
+
+        const sortedChordNotes = chordNotes.slice().sort(function (a, b) {
+            return pitchHeight(a) - pitchHeight(b);
+        });
+
+        /*
+         * Which staff the chord actually lives on, so the right
+         * clef carries over (these files commonly put the chord
+         * on either staff, with the other staff just resting).
+         */
+        const staffEl = sortedChordNotes[0].querySelector("staff");
+        const staffNumber = staffEl ? staffEl.textContent : "1";
+
+        const attributes = firstMeasure.querySelector("attributes");
+
+        const clefs =
+            attributes
+                ? Array.from(attributes.querySelectorAll("clef"))
+                : [];
+
+        let matchingClef = clefs.find(function (c) {
+            return c.getAttribute("number") === staffNumber;
+        });
+
+        if (!matchingClef && clefs.length > 0) {
+            matchingClef = clefs[0];
+        }
+
+        /*
+         * Build the new one-measure document: one quarter note per
+         * chord tone, in a time signature sized to exactly fit
+         * however many notes the chord has.
+         */
+        const newDoc =
+            document.implementation.createDocument(
+                null, "score-partwise", null
+            );
+
+        const root = newDoc.documentElement;
+
+        root.setAttribute("version", "4.0");
+
+        const partList = doc.querySelector("part-list");
+
+        if (partList) {
+            root.appendChild(newDoc.importNode(partList, true));
+        }
+
+        const newPart = newDoc.createElement("part");
+
+        newPart.setAttribute(
+            "id", part.getAttribute("id") || "P1"
+        );
+
+        const newMeasure = newDoc.createElement("measure");
+
+        newMeasure.setAttribute("number", "1");
+
+        const newAttributes = newDoc.createElement("attributes");
+
+        const divisionsEl = newDoc.createElement("divisions");
+        divisionsEl.textContent = "1";
+        newAttributes.appendChild(divisionsEl);
+
+        const keyEl = newDoc.createElement("key");
+        const fifthsEl = newDoc.createElement("fifths");
+        fifthsEl.textContent = "0";
+        keyEl.appendChild(fifthsEl);
+        newAttributes.appendChild(keyEl);
+
+        const timeEl = newDoc.createElement("time");
+        const beatsEl = newDoc.createElement("beats");
+        beatsEl.textContent = String(sortedChordNotes.length);
+        const beatTypeEl = newDoc.createElement("beat-type");
+        beatTypeEl.textContent = "4";
+        timeEl.appendChild(beatsEl);
+        timeEl.appendChild(beatTypeEl);
+        newAttributes.appendChild(timeEl);
+
+        if (matchingClef) {
+            newAttributes.appendChild(newDoc.importNode(matchingClef, true));
+        }
+
+        newMeasure.appendChild(newAttributes);
+
+        sortedChordNotes.forEach(function (noteEl) {
+
+            const pitch = noteEl.querySelector("pitch");
+
+            const newNote = newDoc.createElement("note");
+
+            newNote.appendChild(newDoc.importNode(pitch, true));
+
+            const durationEl = newDoc.createElement("duration");
+            durationEl.textContent = "1";
+            newNote.appendChild(durationEl);
+
+            const typeEl = newDoc.createElement("type");
+            typeEl.textContent = "quarter";
+            newNote.appendChild(typeEl);
+
+            newMeasure.appendChild(newNote);
+
+        });
+
+        newPart.appendChild(newMeasure);
+        root.appendChild(newPart);
+
+        return new XMLSerializer().serializeToString(newDoc);
+
+    }
+
+
+    /*
+     * =================================================
      * PUBLIC API
      * =================================================
      */
@@ -1093,7 +1295,8 @@ window.MusicEngine = (function () {
         makeReorderedMusicXML: makeReorderedMusicXML,
         renderMiniMeasureSet: renderMiniMeasureSet,
         renderMiniMeasureSetWithToolkits: renderMiniMeasureSetWithToolkits,
-        combineMeasures: combineMeasures
+        combineMeasures: combineMeasures,
+        arpeggiateChordXML: arpeggiateChordXML
     };
 
 

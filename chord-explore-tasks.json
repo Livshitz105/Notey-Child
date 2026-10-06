@@ -1,0 +1,8 @@
+[
+    { "id": "f-major-t46", "title": "F major, 6/4 position", "file": "f_dur_t46_chord.musicxml" },
+    { "id": "c-major-7", "title": "C major 7th", "file": "Cmaj7_chord.musicxml" },
+    { "id": "c-diminished-7", "title": "C diminished 7th", "file": "Cdim7_chord.musicxml" },
+    { "id": "f-dominant-7", "title": "Dominant 7th of F major", "file": "f_dur_d57_chord.musicxml" },
+    { "id": "f-minor-6-c", "title": "F minor, 6th position over C", "file": "f_moll_6_C_chord.musicxml" },
+    { "id": "c-major-6", "title": "C major, 6th position", "file": "Cmaj6.musicxml" }
+]
