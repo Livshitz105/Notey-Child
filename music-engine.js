@@ -1120,11 +1120,25 @@ window.MusicEngine = (function () {
         divisionsEl.textContent = "1";
         newAttributes.appendChild(divisionsEl);
 
-        const keyEl = newDoc.createElement("key");
-        const fifthsEl = newDoc.createElement("fifths");
-        fifthsEl.textContent = "0";
-        keyEl.appendChild(fifthsEl);
-        newAttributes.appendChild(keyEl);
+        /*
+         * Copy the SOURCE file's actual key signature, rather
+         * than assuming "no sharps or flats" - that happened to
+         * be correct for every chord so far, but would silently
+         * produce a wrong key signature the moment a chord in a
+         * real key gets added.
+         */
+        const sourceKey = attributes ? attributes.querySelector("key") : null;
+
+        if (sourceKey) {
+            newAttributes.appendChild(newDoc.importNode(sourceKey, true));
+        }
+        else {
+            const keyEl = newDoc.createElement("key");
+            const fifthsEl = newDoc.createElement("fifths");
+            fifthsEl.textContent = "0";
+            keyEl.appendChild(fifthsEl);
+            newAttributes.appendChild(keyEl);
+        }
 
         const timeEl = newDoc.createElement("time");
         const beatsEl = newDoc.createElement("beats");
@@ -1136,7 +1150,23 @@ window.MusicEngine = (function () {
         newAttributes.appendChild(timeEl);
 
         if (matchingClef) {
-            newAttributes.appendChild(newDoc.importNode(matchingClef, true));
+
+            const newClef = newDoc.importNode(matchingClef, true);
+
+            /*
+             * The source clef is numbered for ITS staff (e.g.
+             * number="2" for a bass clef in a two-staff piano
+             * part). This new document only has ONE staff, so
+             * that clef needs to be renumbered to "1" - otherwise
+             * Verovio has nothing to attach a "clef for staff 2"
+             * to in a single-staff document, and silently falls
+             * back to a default treble clef instead of using the
+             * one we actually copied over.
+             */
+            newClef.setAttribute("number", "1");
+
+            newAttributes.appendChild(newClef);
+
         }
 
         newMeasure.appendChild(newAttributes);
