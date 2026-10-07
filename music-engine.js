@@ -1171,6 +1171,17 @@ window.MusicEngine = (function () {
 
         newMeasure.appendChild(newAttributes);
 
+        /*
+         * Maps a <alter> value to the matching MusicXML
+         * <accidental> name.
+         */
+        const accidentalNames = {
+            "-2": "flat-flat",
+            "-1": "flat",
+            "1": "sharp",
+            "2": "double-sharp"
+        };
+
         sortedChordNotes.forEach(function (noteEl) {
 
             const pitch = noteEl.querySelector("pitch");
@@ -1186,6 +1197,29 @@ window.MusicEngine = (function () {
             const typeEl = newDoc.createElement("type");
             typeEl.textContent = "quarter";
             newNote.appendChild(typeEl);
+
+            /*
+             * <alter> alone (already copied above, inside <pitch>)
+             * correctly controls the SOUND, but whether a visible
+             * sharp/flat symbol gets printed is a separate,
+             * explicit decision. Rather than relying on Verovio to
+             * infer the right symbol here, state it directly - a
+             * block chord and these same pitches played as
+             * separate sequential notes can otherwise end up with
+             * different accidental-placement logic applied, even
+             * though the underlying pitches are identical.
+             */
+            const alterEl = pitch.querySelector("alter");
+
+            const alterValue = alterEl ? alterEl.textContent.trim() : "0";
+
+            if (accidentalNames[alterValue]) {
+
+                const accidentalEl = newDoc.createElement("accidental");
+                accidentalEl.textContent = accidentalNames[alterValue];
+                newNote.appendChild(accidentalEl);
+
+            }
 
             newMeasure.appendChild(newNote);
 
