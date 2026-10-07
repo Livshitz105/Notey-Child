@@ -1,10 +1,10 @@
 [
     {
-        "id": "demo-melody-builder",
+        "id": "my_first_piece",
         "title": "Build Your Own Melody",
         "slots": [
             {
-                "label": "Phrase 1 (do-la-mi-re-do)",
+                "label": "Phrase 1 (mi-re-do-sol)",
                 "options": [
                     { "label": "A", "file": "phrase1_rhythmA.musicxml" },
                     { "label": "B", "file": "phrase1_rhythmB.musicxml" },
@@ -12,11 +12,58 @@
                 ]
             },
             {
-                "label": "Phrase 2 (fa-mi-re-do)",
+                "label": "Phrase 2 (fa-mi-fa-sol)",
                 "options": [
                     { "label": "A", "file": "phrase2_rhythmA.musicxml" },
                     { "label": "B", "file": "phrase2_rhythmB.musicxml" },
                     { "label": "C", "file": "phrase2_rhythmC.musicxml" }
+                ]
+            },
+            {
+                "label": "Phrase 3 (re-mi-fa-mi)",
+                "options": [
+                    { "label": "A", "file": "phrase3_rhythmA.musicxml" },
+                    { "label": "B", "file": "phrase3_rhythmB.musicxml" },
+                    { "label": "C", "file": "phrase3_rhythmC.musicxml" }
+                ]
+            }
+        ]
+    },
+
+     {
+        "id": "my_second_piece",
+        "title": "Let's do Waltz",
+        "slots": [
+            {
+                "label": "Phrase 1 (si-sol-re-si-fa-sol)",
+                "options": [
+                    { "label": "A", "file": "piece2_phrase1_rhythmA.musicxml" },
+                    { "label": "B", "file": "piece2_phrase1_rhythmB.musicxml" },
+                    { "label": "C", "file": "piece2_phrase1_rhythmC.musicxml" }
+                ]
+            },
+            {
+                "label": "Phrase 2 (mi-bemol-si-la)",
+                "options": [
+                    { "label": "A", "file": "piece2_phrase2_rhythmA.musicxml" },
+                    { "label": "B", "file": "piece2_phrase2_rhythmB.musicxml" },
+                    { "label": "C", "file": "piece2_phrase2_rhythmC.musicxml" }
+                ]
+            },
+            {
+                "label": "Phrase 3 (fa-sol-la-fa-re-do)",
+                "options": [
+                    { "label": "A", "file": "piece2_phrase3_rhythmA.musicxml" },
+                    { "label": "B", "file": "piece2_phrase3_rhythmB.musicxml" },
+                    { "label": "C", "file": "piece2_phrase3_rhythmC.musicxml" }
+                ]
+            },
+            {
+                "label": "Phrase 3 (do-si)",
+                "options": [
+                    { "label": "A", "file": "piece2_phrase4_rhythmA.musicxml" },
+                    { "label": "B", "file": "piece2_phrase4_rhythmB.musicxml" },
+                    { "label": "C", "file": "piece2_phrase4_rhythmC.musicxml" }
                 ]
             }
         ]

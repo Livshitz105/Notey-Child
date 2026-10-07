@@ -4,7 +4,7 @@
   <identification>
     <encoding>
       <software>MuseScore Studio 4.7.4</software>
-      <encoding-date>2026-10-03</encoding-date>
+      <encoding-date>2026-10-07</encoding-date>
       <supports element="accidental" type="yes"/>
       <supports element="beam" type="yes"/>
       <supports element="print" attribute="new-page" type="yes" value="yes"/>
@@ -82,7 +82,7 @@
       </score-part>
     </part-list>
   <part id="P1">
-    <measure number="1" width="233.69">
+    <measure number="1" width="227.66">
       <print>
         <system-layout>
           <system-margins>
@@ -106,56 +106,46 @@
           <line>2</line>
           </clef>
         </attributes>
-      <note default-x="80.23" default-y="-50">
-        <pitch>
-          <step>C</step>
-          <octave>4</octave>
-          </pitch>
-        <duration>1</duration>
-        <voice>1</voice>
-        <type>eighth</type>
-        <stem>up</stem>
-        <beam number="1">begin</beam>
-        </note>
-      <note default-x="103.56" default-y="-25">
-        <pitch>
-          <step>A</step>
-          <octave>4</octave>
-          </pitch>
-        <duration>1</duration>
-        <voice>1</voice>
-        <type>eighth</type>
-        <stem>up</stem>
-        <beam number="1">end</beam>
-        </note>
-      <note default-x="126.89" default-y="-40">
+      <note default-x="80.23" default-y="-5">
         <pitch>
           <step>E</step>
-          <octave>4</octave>
+          <octave>5</octave>
           </pitch>
-        <duration>2</duration>
+        <duration>3</duration>
         <voice>1</voice>
         <type>quarter</type>
-        <stem>up</stem>
+        <dot default-x="98.23" default-y="-5"/>
+        <stem>down</stem>
         </note>
-      <note default-x="161.89" default-y="-45">
+      <note default-x="124.59" default-y="-10">
         <pitch>
           <step>D</step>
-          <octave>4</octave>
+          <octave>5</octave>
           </pitch>
-        <duration>2</duration>
+        <duration>1</duration>
         <voice>1</voice>
-        <type>quarter</type>
-        <stem>up</stem>
+        <type>eighth</type>
+        <stem>down</stem>
         </note>
-      <note default-x="196.89" default-y="-50">
+      <note default-x="147.93" default-y="-15">
         <pitch>
           <step>C</step>
-          <octave>4</octave>
+          <octave>5</octave>
           </pitch>
-        <duration>2</duration>
+        <duration>3</duration>
         <voice>1</voice>
         <type>quarter</type>
+        <dot default-x="165.93" default-y="-15"/>
+        <stem>up</stem>
+        </note>
+      <note default-x="192.3" default-y="-30">
+        <pitch>
+          <step>G</step>
+          <octave>4</octave>
+          </pitch>
+        <duration>1</duration>
+        <voice>1</voice>
+        <type>eighth</type>
         <stem>up</stem>
         </note>
       </measure>
