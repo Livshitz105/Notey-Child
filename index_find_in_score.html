@@ -103,20 +103,6 @@
             margin-top: 30px;
         }
 
-        /*
-         * Scale the rendered notation to fit its container instead
-         * of showing at Verovio's own default width, which can be
-         * wider than the screen. Safe to do here too: the
-         * clickable measure overlays are positioned using
-         * getBBox(), which works in the SVG's own internal
-         * coordinate space and is unaffected by how it's scaled
-         * for display.
-         */
-        #score svg {
-            width: 100%;
-            height: auto;
-            display: block;
-        }
 
         /*
          * Invisible-by-default clickable area layered over each
