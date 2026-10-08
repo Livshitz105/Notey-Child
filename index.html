@@ -95,6 +95,17 @@
             margin-top: 30px;
         }
 
+        /*
+         * Scale the rendered notation to fit its container instead
+         * of showing at Verovio's own default width, which can be
+         * wider than the screen.
+         */
+        #score svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         /* Normal notation */
         #score g.note {
             fill: black;
@@ -150,9 +161,8 @@
         <a href="index_find_in_score.html">🔍 Find It</a>
         <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_explore.html">🔎 Chord Explorer</a>
         <a href="index_chord_choose.html">🎹 Choose a Chord</a>
-        
+        <a href="index_chord_explore.html">🔎 Chord Explorer</a>
     </nav>
 
     <label for="melodySelector">Melody:</label>

@@ -97,6 +97,17 @@
             margin-top: 30px;
         }
 
+        /*
+         * Scale the rendered notation to fit its container instead
+         * of showing at Verovio's own default width, which can be
+         * wider than the screen.
+         */
+        #score svg {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
         #puzzleArea {
             display: none;
             margin-top: 30px;

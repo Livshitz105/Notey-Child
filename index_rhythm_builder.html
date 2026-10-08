@@ -176,9 +176,48 @@
             background: #3a7bc0;
         }
 
+        /*
+         * A sticky panel showing the assembled melody, pinned to
+         * the top of the screen as you scroll through phrase
+         * choices below. Otherwise the result ends up far down
+         * the page once a set has several phrases, and nothing
+         * tells a first-time visitor they need to scroll to see
+         * it at all.
+         */
+        #myMelodyPanel {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+
+            background: white;
+            border-bottom: 3px solid #4a90d9;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+
+            padding: 10px 0 15px 0;
+            margin-bottom: 20px;
+        }
+
+        #myMelodyPanel h2 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
         #myMelody {
             max-width: 1000px;
-            margin-top: 20px;
+            max-height: 180px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        /*
+         * Scale the rendered notation to fit its container instead
+         * of showing at Verovio's own default width, which can be
+         * wider than the screen.
+         */
+        #myMelody svg {
+            width: 100%;
+            height: auto;
+            display: block;
         }
 
         /* Colored note highlighting during playback */
@@ -251,14 +290,16 @@
         Choose a rhythm for each phrase, then press PLAY!
     </p>
 
+    <div id="myMelodyPanel">
+        <h2>Your Melody</h2>
+
+        <button id="playButton">▶ PLAY MY MELODY</button>
+        <button id="stopButton">■ Stop</button>
+
+        <div id="myMelody"></div>
+    </div>
+
     <div id="slots">Loading...</div>
-
-    <h2>Your Melody</h2>
-
-    <button id="playButton">▶ PLAY MY MELODY</button>
-    <button id="stopButton">■ Stop</button>
-
-    <div id="myMelody"></div>
 
 
     <script>
