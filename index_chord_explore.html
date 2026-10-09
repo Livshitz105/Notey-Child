@@ -152,6 +152,8 @@
         }
 
         .exploreTile {
+            position: relative;
+
             width: 480px;
             height: 300px;
 
@@ -169,6 +171,32 @@
             overflow: hidden;
 
             margin-top: 10px;
+        }
+
+        .playPieceButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+            border: none;
+
+            background: #4a90d9;
+            color: white;
+
+            font-size: 18px;
+            line-height: 42px;
+            padding: 0;
+            margin: 0;
+
+            cursor: pointer;
+        }
+
+        .playPieceButton:hover {
+            background: #3a7bc0;
         }
 
         .exploreTile > svg {
@@ -203,8 +231,8 @@
         <a href="index_find_in_score.html">🔍 Find It</a>
         <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
         <a href="index_chord_explore.html" class="current">🔎 Chord Explorer</a>
+        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
     </nav>
 
     <label for="chordSelector">Chord:</label>
@@ -222,8 +250,6 @@
 
     <br>
 
-    <button id="playButton">▶ PLAY CHORD</button>
-    <button id="playNotesButton">▶ PLAY NOTES IN TURN</button>
     <button id="stopButton">■ Stop</button>
 
 
@@ -283,6 +309,9 @@
                         document.getElementById("notesTile").innerHTML =
                             rendered[1].svg || "";
 
+                        addPlayButton("chordTile", chordToolkit);
+                        addPlayButton("notesTile", notesToolkit);
+
                     })
                     .catch(function (error) {
 
@@ -300,30 +329,41 @@
 
 
             /*
+             * Adds a small play button directly inside a tile -
+             * same corner-button convention used everywhere else
+             * in the app (the puzzle pieces, Listen & Choose, etc.)
+             * - instead of a separate big button below it.
+             */
+            function addPlayButton(tileId, toolkit) {
+
+                if (!toolkit) {
+                    return;
+                }
+
+                const tile = document.getElementById(tileId);
+
+                const playButton = document.createElement("button");
+
+                playButton.className = "playPieceButton";
+                playButton.type = "button";
+                playButton.title = "Play this";
+                playButton.textContent = "▶";
+
+                playButton.addEventListener("click", function () {
+                    MusicEngine.attachHighlighting(toolkit);
+                    MusicEngine.playMIDI(toolkit);
+                });
+
+                tile.appendChild(playButton);
+
+            }
+
+
+            /*
              * =================================================
-             * PLAY / STOP
+             * STOP
              * =================================================
              */
-
-            document.getElementById("playButton")
-                .addEventListener("click", function () {
-
-                    if (chordToolkit) {
-                        MusicEngine.attachHighlighting(chordToolkit);
-                        MusicEngine.playMIDI(chordToolkit);
-                    }
-
-                });
-
-            document.getElementById("playNotesButton")
-                .addEventListener("click", function () {
-
-                    if (notesToolkit) {
-                        MusicEngine.attachHighlighting(notesToolkit);
-                        MusicEngine.playMIDI(notesToolkit);
-                    }
-
-                });
 
             document.getElementById("stopButton")
                 .addEventListener("click", function () {

@@ -954,10 +954,15 @@ window.MusicEngine = (function () {
 
         /*
          * Padding is proportional to the LARGEST piece in this
-         * set - every piece then shares that same canvas.
+         * set - every piece then shares that same canvas. Kept
+         * deliberately tight: since every tile's on-screen pixel
+         * size is fixed by CSS regardless of this canvas size,
+         * less padding here means the actual notation fills more
+         * of that fixed box - i.e. bigger, more legible notation,
+         * not just a smaller margin.
          */
-        const paddingX = Math.max(maxContentWidth * 0.06, 20);
-        const paddingY = Math.max(maxContentHeight * 0.12, 20);
+        const paddingX = Math.max(maxContentWidth * 0.03, 12);
+        const paddingY = Math.max(maxContentHeight * 0.06, 12);
 
         return {
             width: maxContentWidth + paddingX * 2,

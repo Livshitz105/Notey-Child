@@ -103,6 +103,15 @@
             margin-top: 30px;
         }
 
+        /* Colored note highlighting during whole-piece playback */
+        #score g.note {
+            fill: black;
+        }
+
+        #score g.note.playing {
+            fill: red;
+        }
+
 
         /*
          * Invisible-by-default clickable area layered over each
@@ -186,8 +195,8 @@
         <a href="index_find_in_score.html" class="current">🔍 Find It</a>
         <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
         <a href="index_chord_explore.html">🔎 Chord Explorer</a>
+        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
     </nav>
 
     <label for="melodySelector">Melody:</label>
@@ -201,6 +210,7 @@
 
     <button id="playButton">▶ PLAY EXCERPT</button>
     <button id="newExcerptButton">🔀 New Excerpt</button>
+    <button id="playWholeButton">▶ PLAY WHOLE PIECE</button>
 
     <div id="score">Loading music...</div>
 
@@ -483,6 +493,15 @@
 
             MusicEngine.ready(function (toolkit) {
 
+                /*
+                 * Color notes red as the whole piece plays - this
+                 * only needs to be set up once; it always reflects
+                 * whatever melody is currently loaded into this
+                 * same toolkit (the one the visible score itself
+                 * was rendered with).
+                 */
+                MusicEngine.attachHighlighting(toolkit);
+
                 MusicEngine.loadCatalog("melodies.json")
                     .then(function (melodies) {
 
@@ -543,6 +562,20 @@
                             );
 
                         MusicEngine.playMusicXML(excerptXML);
+
+                    });
+
+                document.getElementById("playWholeButton")
+                    .addEventListener("click", function () {
+
+                        /*
+                         * The toolkit is already loaded with the
+                         * full original piece (that's what's
+                         * rendered on screen), so this just plays
+                         * it directly - no separate "whole piece"
+                         * file or rendering needed.
+                         */
+                        MusicEngine.playMIDI(toolkit);
 
                     });
 

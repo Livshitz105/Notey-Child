@@ -180,6 +180,43 @@
             min-height: 50px;
         }
 
+        #chordReveal {
+            margin-top: 10px;
+        }
+
+        #chordReveal .revealLabel {
+            font-size: 18px;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 8px;
+        }
+
+        #chordReveal .exploreTile {
+            position: relative;
+
+            width: 480px;
+            height: 300px;
+
+            border: 4px solid #2e9e44;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+        }
+
+        #chordReveal .exploreTile > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
     
         .activityNav {
             display: flex;
@@ -228,8 +265,8 @@
         <a href="index_find_in_score.html">🔍 Find It</a>
         <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
         <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_choose.html" class="current">🎹 Choose a Chord</a>
         <a href="index_chord_explore.html">🔎 Chord Explorer</a>
+        <a href="index_chord_choose.html" class="current">🎹 Choose a Chord</a>
     </nav>
 
     <label for="taskSelector">Chord:</label>
@@ -246,6 +283,8 @@
 
     <div id="choiceMessage"></div>
 
+    <div id="chordReveal"></div>
+
 
     <script>
 
@@ -258,7 +297,7 @@
              * automatically resetting for another go, without
              * needing a page refresh.
              */
-            const AUTO_RESET_DELAY_MS = 2200;
+            const AUTO_RESET_DELAY_MS = 3500;
 
 
             /*
@@ -298,6 +337,7 @@
                 currentTask.promptXML = null;
 
                 document.getElementById("choiceMessage").textContent = "";
+                document.getElementById("chordReveal").innerHTML = "";
 
                 const container = document.getElementById("variants");
 
@@ -440,6 +480,37 @@
 
 
             /*
+             * Renders the solid chord (what PLAY actually played)
+             * once the exercise has been solved correctly - up to
+             * that point it was only ever audible, never shown.
+             */
+            function revealChord(promptXML) {
+
+                const container = document.getElementById("chordReveal");
+
+                if (!promptXML) {
+                    container.innerHTML = "";
+                    return;
+                }
+
+                const rendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [promptXML], "g.system"
+                    );
+
+                container.innerHTML =
+                    '<div class="revealLabel">The chord was:</div>';
+
+                const tile = document.createElement("div");
+                tile.className = "exploreTile";
+                tile.innerHTML = rendered[0].svg || "";
+
+                container.appendChild(tile);
+
+            }
+
+
+            /*
              * =================================================
              * HANDLE A CHOICE
              * =================================================
@@ -466,6 +537,13 @@
 
                     document.getElementById("choiceMessage").textContent =
                         "Yes! That's the one.";
+
+                    /*
+                     * Now that it's solved, show the actual chord
+                     * that was played - up to now it was only ever
+                     * heard, never seen.
+                     */
+                    revealChord(task.promptXML);
 
                     /*
                      * Automatically reset back to a fresh,
