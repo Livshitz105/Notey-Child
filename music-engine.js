@@ -974,6 +974,271 @@ window.MusicEngine = (function () {
 
     /*
      * =================================================
+     * BUILD A CHORD FROM A ROOT NOTE + CHORD TYPE
+     * =================================================
+     */
+
+    /*
+     * Letter-name reference tables. Semitone values are "C = 0"
+     * within an octave; letter index is C=0 .. B=6.
+     */
+    const LETTER_SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    const LETTER_ORDER = ["C", "D", "E", "F", "G", "A", "B"];
+
+    /*
+     * Transposes a pitch by a generic interval, spelled correctly
+     * - not just "the nearest enharmonic note", but the actual
+     * right LETTER NAME for that interval. E.g. a major third
+     * above D is F# - never Gb - because a third always spans
+     * two letter names (D, E, F) regardless of accidentals.
+     *
+     * letterSteps: how many letter-names up (0 = same letter,
+     * 2 = a third, 4 = a fifth, etc.)
+     * semitones: the actual distance in semitones (determines
+     * which accidental, if any, is needed on the resulting
+     * letter to land on the right pitch).
+     *
+     * Returns { step, alter, octave }.
+     */
+    function transposePitch(step, alter, octave, letterSteps, semitones) {
+
+        const rootAbsolute =
+            octave * 12 + LETTER_SEMITONES[step] + alter;
+
+        const rootLetterIndex = LETTER_ORDER.indexOf(step);
+
+        const newLetterIndexRaw = rootLetterIndex + letterSteps;
+
+        const octaveOffset = Math.floor(newLetterIndexRaw / 7);
+
+        const newLetterIndex =
+            ((newLetterIndexRaw % 7) + 7) % 7;
+
+        const newStep = LETTER_ORDER[newLetterIndex];
+
+        const newOctave = octave + octaveOffset;
+
+        const newNaturalAbsolute =
+            newOctave * 12 + LETTER_SEMITONES[newStep];
+
+        const targetAbsolute = rootAbsolute + semitones;
+
+        const newAlter = targetAbsolute - newNaturalAbsolute;
+
+        return { step: newStep, alter: newAlter, octave: newOctave };
+
+    }
+
+
+    /*
+     * Common chord types, each as a list of intervals above the
+     * root (the root itself - 0 letter steps, 0 semitones - is
+     * included first). Spelling follows standard diatonic
+     * interval theory throughout (thirds are always spelled as
+     * thirds, fifths as fifths, etc.), which is the generalizable,
+     * consistent approach - for the (rarer, more advanced)
+     * diminished 7th chord specifically, this does mean the
+     * seventh is spelled as an actual diminished seventh (e.g.
+     * Bbb above C), which is correct by the numbers but less
+     * common in everyday notation than the enharmonic equivalent.
+     */
+    const CHORD_TYPES = {
+        "major": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 4 },
+            { letterSteps: 4, semitones: 7 }
+        ],
+        "minor": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 3 },
+            { letterSteps: 4, semitones: 7 }
+        ],
+        "diminished": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 3 },
+            { letterSteps: 4, semitones: 6 }
+        ],
+        "augmented": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 4 },
+            { letterSteps: 4, semitones: 8 }
+        ],
+        "major7": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 4 },
+            { letterSteps: 4, semitones: 7 },
+            { letterSteps: 6, semitones: 11 }
+        ],
+        "dominant7": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 4 },
+            { letterSteps: 4, semitones: 7 },
+            { letterSteps: 6, semitones: 10 }
+        ],
+        "minor7": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 3 },
+            { letterSteps: 4, semitones: 7 },
+            { letterSteps: 6, semitones: 10 }
+        ],
+        "diminished7": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 3 },
+            { letterSteps: 4, semitones: 6 },
+            { letterSteps: 6, semitones: 9 }
+        ],
+        "halfDiminished7": [
+            { letterSteps: 0, semitones: 0 },
+            { letterSteps: 2, semitones: 3 },
+            { letterSteps: 4, semitones: 6 },
+            { letterSteps: 6, semitones: 10 }
+        ]
+    };
+
+
+    /*
+     * Builds a standalone one-measure MusicXML document containing
+     * a block chord - the given root note plus every interval in
+     * the named chord type, all sounding together. In exactly the
+     * same simple single-staff shape as a hand-authored chord file
+     * like Cmaj6.musicxml, so it works everywhere those do -
+     * rendering, playback, and arpeggiateChordXML all need no
+     * changes to handle a chord built this way.
+     */
+    function buildChordXML(rootStep, rootAlter, rootOctave, chordType) {
+
+        const intervals = CHORD_TYPES[chordType];
+
+        if (!intervals) {
+            throw new Error("Unknown chord type: " + chordType);
+        }
+
+        const pitches = intervals.map(function (interval) {
+            return transposePitch(
+                rootStep, rootAlter, rootOctave,
+                interval.letterSteps, interval.semitones
+            );
+        });
+
+        const doc =
+            document.implementation.createDocument(
+                null, "score-partwise", null
+            );
+
+        const root = doc.documentElement;
+
+        root.setAttribute("version", "4.0");
+
+        const partList = doc.createElement("part-list");
+        const scorePart = doc.createElement("score-part");
+        scorePart.setAttribute("id", "P1");
+        const partName = doc.createElement("part-name");
+        partName.textContent = "Piano";
+        scorePart.appendChild(partName);
+        partList.appendChild(scorePart);
+        root.appendChild(partList);
+
+        const part = doc.createElement("part");
+        part.setAttribute("id", "P1");
+
+        const measure = doc.createElement("measure");
+        measure.setAttribute("number", "1");
+
+        const attributes = doc.createElement("attributes");
+
+        const divisionsEl = doc.createElement("divisions");
+        divisionsEl.textContent = "1";
+        attributes.appendChild(divisionsEl);
+
+        const keyEl = doc.createElement("key");
+        const fifthsEl = doc.createElement("fifths");
+        fifthsEl.textContent = "0";
+        keyEl.appendChild(fifthsEl);
+        attributes.appendChild(keyEl);
+
+        const timeEl = doc.createElement("time");
+        const beatsEl = doc.createElement("beats");
+        beatsEl.textContent = "4";
+        const beatTypeEl = doc.createElement("beat-type");
+        beatTypeEl.textContent = "4";
+        timeEl.appendChild(beatsEl);
+        timeEl.appendChild(beatTypeEl);
+        attributes.appendChild(timeEl);
+
+        const clefEl = doc.createElement("clef");
+        const signEl = doc.createElement("sign");
+        signEl.textContent = "G";
+        const lineEl = doc.createElement("line");
+        lineEl.textContent = "2";
+        clefEl.appendChild(signEl);
+        clefEl.appendChild(lineEl);
+        attributes.appendChild(clefEl);
+
+        measure.appendChild(attributes);
+
+        const accidentalNames = {
+            "-2": "flat-flat",
+            "-1": "flat",
+            "1": "sharp",
+            "2": "double-sharp"
+        };
+
+        pitches.forEach(function (pitchInfo, index) {
+
+            const note = doc.createElement("note");
+
+            if (index > 0) {
+                note.appendChild(doc.createElement("chord"));
+            }
+
+            const pitchEl = doc.createElement("pitch");
+
+            const stepEl = doc.createElement("step");
+            stepEl.textContent = pitchInfo.step;
+            pitchEl.appendChild(stepEl);
+
+            if (pitchInfo.alter !== 0) {
+                const alterEl = doc.createElement("alter");
+                alterEl.textContent = String(pitchInfo.alter);
+                pitchEl.appendChild(alterEl);
+            }
+
+            const octaveEl = doc.createElement("octave");
+            octaveEl.textContent = String(pitchInfo.octave);
+            pitchEl.appendChild(octaveEl);
+
+            note.appendChild(pitchEl);
+
+            const durationEl = doc.createElement("duration");
+            durationEl.textContent = "4";
+            note.appendChild(durationEl);
+
+            const typeEl = doc.createElement("type");
+            typeEl.textContent = "whole";
+            note.appendChild(typeEl);
+
+            const alterKey = String(pitchInfo.alter);
+
+            if (accidentalNames[alterKey]) {
+                const accidentalEl = doc.createElement("accidental");
+                accidentalEl.textContent = accidentalNames[alterKey];
+                note.appendChild(accidentalEl);
+            }
+
+            measure.appendChild(note);
+
+        });
+
+        part.appendChild(measure);
+        root.appendChild(part);
+
+        return new XMLSerializer().serializeToString(doc);
+
+    }
+
+
+    /*
+     * =================================================
      * ARPEGGIATE A BLOCK CHORD
      * =================================================
      */
@@ -1365,7 +1630,10 @@ window.MusicEngine = (function () {
         renderMiniMeasureSet: renderMiniMeasureSet,
         renderMiniMeasureSetWithToolkits: renderMiniMeasureSetWithToolkits,
         combineMeasures: combineMeasures,
-        arpeggiateChordXML: arpeggiateChordXML
+        arpeggiateChordXML: arpeggiateChordXML,
+        transposePitch: transposePitch,
+        buildChordXML: buildChordXML,
+        CHORD_TYPES: CHORD_TYPES
     };
 
 
