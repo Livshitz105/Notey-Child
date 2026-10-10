@@ -138,27 +138,23 @@
             margin-top: 20px;
         }
 
-        .tilePair {
+        .tileRow {
             display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
             align-items: flex-start;
-            gap: 18px;
-            width: 100%;
         }
 
-        .tilePanel {
-            flex: 1 1 0;
-            min-width: 0;
-        }
-
-        .tilePanel h2 {
-            margin-top: 20px;
+        .tileColumn {
+            display: flex;
+            flex-direction: column;
         }
 
         .exploreTile {
             position: relative;
 
-            width: 100%;
-            height: 360px;
+            width: 480px;
+            height: 300px;
 
             border: 4px solid #888;
             border-radius: 12px;
@@ -180,12 +176,6 @@
             width: 100%;
             height: 100%;
             display: block;
-        }
-
-        @media (max-width: 760px) {
-            .tilePair { flex-direction: column; }
-            .tilePanel { width: 100%; }
-            .exploreTile { height: 320px; }
         }
 
         .playPieceButton {
@@ -255,15 +245,18 @@
     <h2>Chord Type</h2>
     <div id="typePicker" class="pickerRow"></div>
 
-    <div class="tilePair">
-        <section class="tilePanel">
+    <div class="tileRow">
+
+        <div class="tileColumn">
             <h2>The Chord</h2>
             <div id="chordTile" class="exploreTile">Pick a root and a chord type above.</div>
-        </section>
-        <section class="tilePanel">
+        </div>
+
+        <div class="tileColumn">
             <h2>Building Up</h2>
             <div id="buildupTile" class="exploreTile">Pick a root and a chord type above.</div>
-        </section>
+        </div>
+
     </div>
 
     <button id="stopButton">■ Stop</button>
@@ -310,19 +303,20 @@
                         currentRoot, 0, 4, currentType
                     );
 
-                // Render each tile independently: the multi-measure
-                // buildup must not force the single chord to be tiny.
-                const chordRendered =
+                /*
+                 * Both tiles rendered together so they share one
+                 * consistent scale - otherwise the multi-measure
+                 * buildup tile and the single-measure chord tile
+                 * could end up looking like very different sizes
+                 * of notation.
+                 */
+                const rendered =
                     MusicEngine.renderMiniMeasureSetWithToolkits(
-                        [chordXML], "g.system"
-                    )[0];
-                const buildupRendered =
-                    MusicEngine.renderMiniMeasureSetWithToolkits(
-                        [buildupXML], "g.system"
-                    )[0];
+                        [chordXML, buildupXML], "g.system"
+                    );
 
-                showTile("chordTile", chordRendered, "Play this chord");
-                showTile("buildupTile", buildupRendered, "Play the buildup");
+                showTile("chordTile", rendered[0], "Play this chord");
+                showTile("buildupTile", rendered[1], "Play the buildup");
 
             }
 
