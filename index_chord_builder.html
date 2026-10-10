@@ -304,19 +304,27 @@
                     );
 
                 /*
-                 * Both tiles rendered together so they share one
-                 * consistent scale - otherwise the multi-measure
-                 * buildup tile and the single-measure chord tile
-                 * could end up looking like very different sizes
-                 * of notation.
+                 * Rendered as two SEPARATE calls, not one shared
+                 * set - "The Chord" is always one measure, but
+                 * "Building Up" can be three or four measures on
+                 * one line. Sharing one scale between something
+                 * that different in width means the scale gets
+                 * dictated by the wider one, shrinking the
+                 * single-measure tile for no good reason. Each
+                 * tile gets sized for its own content instead.
                  */
-                const rendered =
+                const chordRendered =
                     MusicEngine.renderMiniMeasureSetWithToolkits(
-                        [chordXML, buildupXML], "g.system"
+                        [chordXML], "g.system"
                     );
 
-                showTile("chordTile", rendered[0], "Play this chord");
-                showTile("buildupTile", rendered[1], "Play the buildup");
+                const buildupRendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [buildupXML], "g.system"
+                    );
+
+                showTile("chordTile", chordRendered[0], "Play this chord");
+                showTile("buildupTile", buildupRendered[0], "Play the buildup");
 
             }
 
