@@ -1105,7 +1105,20 @@ window.MusicEngine = (function () {
      * rendering, playback, and arpeggiateChordXML all need no
      * changes to handle a chord built this way.
      */
-    function buildChordXML(rootStep, rootAlter, rootOctave, chordType) {
+    const CHORD_ACCIDENTAL_NAMES = {
+        "-2": "flat-flat",
+        "-1": "flat",
+        "1": "sharp",
+        "2": "double-sharp"
+    };
+
+    /*
+     * Computes the actual pitches (step/alter/octave) of a chord
+     * type stacked above a root - shared by buildChordXML and
+     * buildChordBuildupXML below, so both always agree on exactly
+     * which notes a given chord type means.
+     */
+    function computeChordPitches(rootStep, rootAlter, rootOctave, chordType) {
 
         const intervals = CHORD_TYPES[chordType];
 
@@ -1113,12 +1126,21 @@ window.MusicEngine = (function () {
             throw new Error("Unknown chord type: " + chordType);
         }
 
-        const pitches = intervals.map(function (interval) {
+        return intervals.map(function (interval) {
             return transposePitch(
                 rootStep, rootAlter, rootOctave,
                 interval.letterSteps, interval.semitones
             );
         });
+
+    }
+
+    /*
+     * A fresh, empty score-partwise document with just a
+     * "Piano" part-list - the common starting point for every
+     * chord document this engine generates.
+     */
+    function createChordDocumentShell() {
 
         const doc =
             document.implementation.createDocument(
@@ -1141,8 +1163,17 @@ window.MusicEngine = (function () {
         const part = doc.createElement("part");
         part.setAttribute("id", "P1");
 
-        const measure = doc.createElement("measure");
-        measure.setAttribute("number", "1");
+        root.appendChild(part);
+
+        return { doc: doc, root: root, part: part };
+
+    }
+
+    /*
+     * The standard <attributes> block (divisions, key, time,
+     * treble clef) used at the start of every chord document.
+     */
+    function createChordAttributes(doc) {
 
         const attributes = doc.createElement("attributes");
 
@@ -1174,65 +1205,127 @@ window.MusicEngine = (function () {
         clefEl.appendChild(lineEl);
         attributes.appendChild(clefEl);
 
-        measure.appendChild(attributes);
+        return attributes;
 
-        const accidentalNames = {
-            "-2": "flat-flat",
-            "-1": "flat",
-            "1": "sharp",
-            "2": "double-sharp"
-        };
+    }
+
+    /*
+     * Appends one note (a whole note, part of a simultaneous
+     * chord unless isChordTone is false) to a measure, with the
+     * correct accidental symbol stated explicitly - see
+     * arpeggiateChordXML above for why that's done explicitly
+     * rather than left for Verovio to infer.
+     */
+    function appendChordNote(doc, measure, pitchInfo, isChordTone) {
+
+        const note = doc.createElement("note");
+
+        if (isChordTone) {
+            note.appendChild(doc.createElement("chord"));
+        }
+
+        const pitchEl = doc.createElement("pitch");
+
+        const stepEl = doc.createElement("step");
+        stepEl.textContent = pitchInfo.step;
+        pitchEl.appendChild(stepEl);
+
+        if (pitchInfo.alter !== 0) {
+            const alterEl = doc.createElement("alter");
+            alterEl.textContent = String(pitchInfo.alter);
+            pitchEl.appendChild(alterEl);
+        }
+
+        const octaveEl = doc.createElement("octave");
+        octaveEl.textContent = String(pitchInfo.octave);
+        pitchEl.appendChild(octaveEl);
+
+        note.appendChild(pitchEl);
+
+        const durationEl = doc.createElement("duration");
+        durationEl.textContent = "4";
+        note.appendChild(durationEl);
+
+        const typeEl = doc.createElement("type");
+        typeEl.textContent = "whole";
+        note.appendChild(typeEl);
+
+        const accidentalName =
+            CHORD_ACCIDENTAL_NAMES[String(pitchInfo.alter)];
+
+        if (accidentalName) {
+            const accidentalEl = doc.createElement("accidental");
+            accidentalEl.textContent = accidentalName;
+            note.appendChild(accidentalEl);
+        }
+
+        measure.appendChild(note);
+
+    }
+
+    function buildChordXML(rootStep, rootAlter, rootOctave, chordType) {
+
+        const pitches =
+            computeChordPitches(
+                rootStep, rootAlter, rootOctave, chordType
+            );
+
+        const shell = createChordDocumentShell();
+
+        const measure = shell.doc.createElement("measure");
+        measure.setAttribute("number", "1");
+
+        measure.appendChild(createChordAttributes(shell.doc));
 
         pitches.forEach(function (pitchInfo, index) {
+            appendChordNote(shell.doc, measure, pitchInfo, index > 0);
+        });
 
-            const note = doc.createElement("note");
+        shell.part.appendChild(measure);
 
-            if (index > 0) {
-                note.appendChild(doc.createElement("chord"));
+        return new XMLSerializer().serializeToString(shell.doc);
+
+    }
+
+    /*
+     * Builds the SAME chord as buildChordXML, but spread across
+     * several measures that add one more note each time - e.g.
+     * for a C major triad: measure 1 is just C, measure 2 is C+E,
+     * measure 3 is C+E+G. Lets a child watch (and hear) a chord
+     * accumulate one note at a time, rather than only ever seeing
+     * it fully formed.
+     */
+    function buildChordBuildupXML(rootStep, rootAlter, rootOctave, chordType) {
+
+        const pitches =
+            computeChordPitches(
+                rootStep, rootAlter, rootOctave, chordType
+            );
+
+        const shell = createChordDocumentShell();
+
+        pitches.forEach(function (_unused, stageIndex) {
+
+            const measure = shell.doc.createElement("measure");
+            measure.setAttribute("number", String(stageIndex + 1));
+
+            if (stageIndex === 0) {
+                measure.appendChild(createChordAttributes(shell.doc));
             }
 
-            const pitchEl = doc.createElement("pitch");
+            const notesSoFar = pitches.slice(0, stageIndex + 1);
 
-            const stepEl = doc.createElement("step");
-            stepEl.textContent = pitchInfo.step;
-            pitchEl.appendChild(stepEl);
+            notesSoFar.forEach(function (pitchInfo, noteIndex) {
+                appendChordNote(
+                    shell.doc, measure, pitchInfo, noteIndex > 0
+                );
+            });
 
-            if (pitchInfo.alter !== 0) {
-                const alterEl = doc.createElement("alter");
-                alterEl.textContent = String(pitchInfo.alter);
-                pitchEl.appendChild(alterEl);
-            }
-
-            const octaveEl = doc.createElement("octave");
-            octaveEl.textContent = String(pitchInfo.octave);
-            pitchEl.appendChild(octaveEl);
-
-            note.appendChild(pitchEl);
-
-            const durationEl = doc.createElement("duration");
-            durationEl.textContent = "4";
-            note.appendChild(durationEl);
-
-            const typeEl = doc.createElement("type");
-            typeEl.textContent = "whole";
-            note.appendChild(typeEl);
-
-            const alterKey = String(pitchInfo.alter);
-
-            if (accidentalNames[alterKey]) {
-                const accidentalEl = doc.createElement("accidental");
-                accidentalEl.textContent = accidentalNames[alterKey];
-                note.appendChild(accidentalEl);
-            }
-
-            measure.appendChild(note);
+            shell.part.appendChild(measure);
 
         });
 
-        part.appendChild(measure);
-        root.appendChild(part);
-
-        return new XMLSerializer().serializeToString(doc);
+        return new XMLSerializer().serializeToString(shell.doc);
 
     }
 
@@ -1633,6 +1726,7 @@ window.MusicEngine = (function () {
         arpeggiateChordXML: arpeggiateChordXML,
         transposePitch: transposePitch,
         buildChordXML: buildChordXML,
+        buildChordBuildupXML: buildChordBuildupXML,
         CHORD_TYPES: CHORD_TYPES
     };
 

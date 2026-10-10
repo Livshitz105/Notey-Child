@@ -236,6 +236,9 @@
     <h2>The Chord</h2>
     <div id="chordTile" class="exploreTile">Pick a root and a chord type above.</div>
 
+    <h2>Building Up</h2>
+    <div id="buildupTile" class="exploreTile">Pick a root and a chord type above.</div>
+
     <button id="stopButton">■ Stop</button>
 
 
@@ -275,34 +278,57 @@
                         currentRoot, 0, 4, currentType
                     );
 
-                const rendered =
-                    MusicEngine.renderMiniMeasureSetWithToolkits(
-                        [chordXML], "g.system"
+                const buildupXML =
+                    MusicEngine.buildChordBuildupXML(
+                        currentRoot, 0, 4, currentType
                     );
 
-                currentToolkit = rendered[0].toolkit;
+                /*
+                 * Both tiles rendered together so they share one
+                 * consistent scale - otherwise the multi-measure
+                 * buildup tile and the single-measure chord tile
+                 * could end up looking like very different sizes
+                 * of notation.
+                 */
+                const rendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [chordXML, buildupXML], "g.system"
+                    );
 
-                const tile = document.getElementById("chordTile");
+                showTile("chordTile", rendered[0], "Play this chord");
+                showTile("buildupTile", rendered[1], "Play the buildup");
 
-                tile.innerHTML = rendered[0].svg || "";
+            }
 
-                if (currentToolkit) {
+            function showTile(tileId, renderResult, buttonTitle) {
 
-                    const playButton = document.createElement("button");
+                const tile = document.getElementById(tileId);
 
-                    playButton.className = "playPieceButton";
-                    playButton.type = "button";
-                    playButton.title = "Play this chord";
-                    playButton.textContent = "▶";
+                tile.innerHTML = renderResult.svg || "";
 
-                    playButton.addEventListener("click", function () {
-                        MusicEngine.attachHighlighting(currentToolkit);
-                        MusicEngine.playMIDI(currentToolkit);
-                    });
+                const toolkit = renderResult.toolkit;
 
-                    tile.appendChild(playButton);
-
+                if (tileId === "chordTile") {
+                    currentToolkit = toolkit;
                 }
+
+                if (!toolkit) {
+                    return;
+                }
+
+                const playButton = document.createElement("button");
+
+                playButton.className = "playPieceButton";
+                playButton.type = "button";
+                playButton.title = buttonTitle;
+                playButton.textContent = "▶";
+
+                playButton.addEventListener("click", function () {
+                    MusicEngine.attachHighlighting(toolkit);
+                    MusicEngine.playMIDI(toolkit);
+                });
+
+                tile.appendChild(playButton);
 
             }
 
