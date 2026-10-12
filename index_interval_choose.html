@@ -193,16 +193,31 @@
             cursor: default;
         }
 
+        /* The right answer: calm, outlined - not a solid block of colour */
         .answerButton.correct {
-            background: #3cb44b;
+            background: #eaf7ed;
             border-color: #3cb44b;
-            color: white;
+            color: #1d6b2c;
         }
 
-        .answerButton.wrong {
-            background: #e6194b;
-            border-color: #e6194b;
-            color: white;
+        /* A wrong answer "explodes" and is gone */
+        .answerButton.popping {
+            animation: popAway 0.55s ease-out forwards;
+            pointer-events: none;
+        }
+
+        .answerButton.gone {
+            display: none;
+        }
+
+        @keyframes popAway {
+            0%   { transform: scale(1) rotate(0deg); opacity: 1; filter: blur(0); }
+            25%  { transform: scale(1.18) rotate(-4deg); opacity: 1; }
+            100% { transform: scale(0.1) rotate(14deg); opacity: 0; filter: blur(6px); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .answerButton.popping { animation: none; opacity: 0; }
         }
 
         #feedback {
@@ -213,12 +228,24 @@
         }
 
         #feedback.good { color: #2e9e44; }
-        #feedback.bad { color: #c0392b; }
+        #feedback.bad { color: #b9651a; }
+
+        .topRow {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+        }
 
         #score {
-            font-size: 20px;
-            color: #555;
-            margin-top: 10px;
+            font-size: 30px;
+            font-weight: 900;
+            color: white;
+            background: #4363d8;
+            border-radius: 40px;
+            padding: 10px 28px;
+            white-space: nowrap;
         }
 
         .exploreTile {
@@ -305,9 +332,12 @@
     <nav id="activityNav" class="activityNav"></nav>
     <script>MusicEngine.buildNav();</script>
 
-    <p id="instructions">
-        Listen to the interval - then choose its name.
-    </p>
+    <div class="topRow">
+        <p id="instructions">
+            Listen to the interval - then choose its name.
+        </p>
+        <div id="score">⭐ Score: 0 / 0</div>
+    </div>
 
     <h2>Level</h2>
     <div id="levelPicker" class="pickerRow"></div>
@@ -321,7 +351,6 @@
     <div id="answers" class="answerRow"></div>
 
     <div id="feedback"></div>
-    <div id="score"></div>
 
     <div id="revealTile" class="exploreTile">The notes will appear here after you answer.</div>
 
@@ -646,35 +675,75 @@
 
             }
 
+            function popAway(button) {
+
+                if (button.classList.contains("popping") ||
+                    button.classList.contains("gone")) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.classList.add("popping");
+
+                setTimeout(function () {
+                    button.classList.add("gone");
+                }, 560);
+
+            }
+
             function handleAnswer(chosen, button) {
 
                 if (answered) {
                     return;
                 }
 
-                answered = true;
-                attempts++;
-
                 const isCorrect = chosen.id === question.interval.id;
 
-                if (isCorrect) {
-                    correctCount++;
+                // Only the FIRST try on each interval counts for the score.
+                if (!question.counted) {
+
+                    question.counted = true;
+                    attempts++;
+
+                    if (isCorrect) {
+                        correctCount++;
+                    }
+
+                    updateScore();
+
                 }
+
+                const feedback = document.getElementById("feedback");
+
+                if (!isCorrect) {
+
+                    // The wrong option explodes; the others stay, try again.
+                    popAway(button);
+
+                    feedback.textContent =
+                        "Not that one - listen again and try another.";
+                    feedback.className = "bad";
+
+                    return;
+
+                }
+
+                // Correct: every wrong option left on screen explodes,
+                // only the right answer remains.
+                answered = true;
 
                 Array.from(document.getElementById("answers").children)
                     .forEach(function (b) {
 
-                        b.disabled = true;
-
-                        if (b.dataset.id === question.interval.id) {
+                        if (b === button) {
+                            b.disabled = true;
                             b.classList.add("correct");
-                        } else if (b === button) {
-                            b.classList.add("wrong");
+                            b.textContent = "✓ " + chosen.name;
+                        } else {
+                            popAway(b);
                         }
 
                     });
-
-                const feedback = document.getElementById("feedback");
 
                 const explanation =
                     noteName(question.root) + " → " + noteName(question.high) +
@@ -682,12 +751,8 @@
                     question.interval.semitones +
                     (question.interval.semitones === 1 ? " half-step" : " half-steps");
 
-                feedback.textContent =
-                    (isCorrect ? "Correct! " : "Not quite. ") + explanation;
-
-                feedback.className = isCorrect ? "good" : "bad";
-
-                updateScore();
+                feedback.textContent = "Correct! " + explanation;
+                feedback.className = "good";
 
                 showReveal();
 
@@ -732,9 +797,7 @@
             function updateScore() {
 
                 document.getElementById("score").textContent =
-                    attempts === 0
-                        ? ""
-                        : "Score: " + correctCount + " / " + attempts;
+                    "⭐ Score: " + correctCount + " / " + attempts;
 
             }
 
