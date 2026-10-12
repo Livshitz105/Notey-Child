@@ -63,6 +63,13 @@
        "title": "Waltz_from_Rosenkavalier",
        "composer": "Richard Strauss",
        "file": "rosenkavalier_waltz.musicxml"  
+    },
+
+    {
+        "id": "chopin_prelude",
+       "title": "Prelude_F_dur",
+       "composer": "Frederic Chopin",
+       "file": "Chopin_prelude-f-dur.musicxml"  
     }
 
 ]
