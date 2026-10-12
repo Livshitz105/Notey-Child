@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Notey Child — a little music reader – Interval Builder</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        .appTitle {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin: 10px 0 0 0;
+        }
+
+        .appTitle span:nth-child(1) { color: #e6194b; }
+        .appTitle span:nth-child(2) { color: #f58231; }
+        .appTitle span:nth-child(3) { color: #ffcc00; }
+        .appTitle span:nth-child(4) { color: #3cb44b; }
+        .appTitle span:nth-child(5) { color: #17a2b8; }
+        .appTitle span:nth-child(6) { color: #4363d8; }
+        .appTitle span:nth-child(7) { color: #911eb4; }
+        .appTitle span:nth-child(8) { color: #e83e8c; }
+        .appTitle span:nth-child(9) { color: #fd7e14; }
+        .appTitle span:nth-child(10) { color: #20c997; }
+
+        .appSubtitle {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        #instructions {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        h2 {
+            margin-top: 30px;
+        }
+
+        .pickerRow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pickerButton {
+            font-size: 20px;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: 3px solid #888;
+            border-radius: 8px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .pickerButton:hover {
+            border-color: #4a90d9;
+        }
+
+        .pickerButton.selected {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+        .intervalButton {
+            font-size: 16px;
+            padding: 10px 16px;
+        }
+
+        #intervalInfo {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 25px;
+            color: #333;
+        }
+
+        #stopButton {
+            margin-top: 20px;
+        }
+
+        .tilePair {
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+            width: 100%;
+        }
+
+        .tilePanel {
+            flex: 1 1 0;
+            min-width: 0;
+        }
+
+        .tilePanel h2 {
+            margin-top: 20px;
+        }
+
+        .exploreTile {
+            position: relative;
+
+            width: 100%;
+            height: 360px;
+
+            border: 4px solid #888;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+
+            margin-top: 15px;
+        }
+
+        .exploreTile > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        @media (max-width: 760px) {
+            .tilePair { flex-direction: column; }
+            .tilePanel { width: 100%; }
+            .exploreTile { height: 320px; }
+        }
+
+        .playPieceButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+            border: none;
+
+            background: #4a90d9;
+            color: white;
+
+            font-size: 18px;
+            line-height: 42px;
+            padding: 0;
+            margin: 0;
+
+            cursor: pointer;
+        }
+
+        .playPieceButton:hover {
+            background: #3a7bc0;
+        }
+
+        /* Colored note highlighting during playback */
+        .exploreTile g.note {
+            fill: black;
+        }
+
+        .exploreTile g.note.playing {
+            fill: red;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
+    <div class="appSubtitle">LITTLE MUSIC READER</div>
+
+    <nav class="activityNav">
+        <a href="index.html">🎵 Listen &amp; Follow</a>
+        <a href="index_puzzle.html">🧩 Puzzle</a>
+        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
+        <a href="index_find_in_score.html">🔍 Find It</a>
+        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
+        <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
+        <a href="index_chord_explore.html">🔎 Chord Explorer</a>
+        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
+        <a href="index_chord_builder.html">🏗️ Chord Builder</a>
+        <a href="index_interval_builder.html" class="current">📏 Interval Builder</a>
+    </nav>
+
+    <p id="instructions">
+        Pick a root note, then pick an interval - watch it get built.
+    </p>
+
+    <h2>Root Note</h2>
+    <div id="rootPicker" class="pickerRow"></div>
+
+    <h2>Interval</h2>
+    <div id="intervalPicker" class="pickerRow"></div>
+
+    <div id="intervalInfo"></div>
+
+    <div class="tilePair">
+        <section class="tilePanel">
+            <h2>Together</h2>
+            <div id="harmonicTile" class="exploreTile">Pick a root and an interval above.</div>
+        </section>
+        <section class="tilePanel">
+            <h2>One After the Other</h2>
+            <div id="melodicTile" class="exploreTile">Pick a root and an interval above.</div>
+        </section>
+    </div>
+
+    <button id="stopButton">■ Stop</button>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            /*
+             * Root notes, including half-tones (both spellings).
+             * alter: +1 = sharp, -1 = flat
+             */
+            const ROOTS = [
+                { letter: "C", alter: 0 },
+                { letter: "C", alter: 1 },
+                { letter: "D", alter: -1 },
+                { letter: "D", alter: 0 },
+                { letter: "D", alter: 1 },
+                { letter: "E", alter: -1 },
+                { letter: "E", alter: 0 },
+                { letter: "F", alter: 0 },
+                { letter: "F", alter: 1 },
+                { letter: "G", alter: -1 },
+                { letter: "G", alter: 0 },
+                { letter: "G", alter: 1 },
+                { letter: "A", alter: -1 },
+                { letter: "A", alter: 0 },
+                { letter: "A", alter: 1 },
+                { letter: "B", alter: -1 },
+                { letter: "B", alter: 0 }
+            ];
+
+            /*
+             * Every interval from P1 to P8.
+             * semitones = size in half-steps
+             * steps     = number of letter names counted (1 = unison ... 8 = octave)
+             */
+            const INTERVALS = [
+                { id: "P1", label: "P1", name: "Perfect unison",     semitones: 0,  steps: 1 },
+                { id: "m2", label: "m2", name: "Minor 2nd",          semitones: 1,  steps: 2 },
+                { id: "M2", label: "M2", name: "Major 2nd",          semitones: 2,  steps: 2 },
+                { id: "m3", label: "m3", name: "Minor 3rd",          semitones: 3,  steps: 3 },
+                { id: "M3", label: "M3", name: "Major 3rd",          semitones: 4,  steps: 3 },
+                { id: "P4", label: "P4", name: "Perfect 4th",        semitones: 5,  steps: 4 },
+                { id: "A4", label: "A4", name: "Augmented 4th",      semitones: 6,  steps: 4 },
+                { id: "d5", label: "d5", name: "Diminished 5th",     semitones: 6,  steps: 5 },
+                { id: "P5", label: "P5", name: "Perfect 5th",        semitones: 7,  steps: 5 },
+                { id: "m6", label: "m6", name: "Minor 6th",          semitones: 8,  steps: 6 },
+                { id: "M6", label: "M6", name: "Major 6th",          semitones: 9,  steps: 6 },
+                { id: "m7", label: "m7", name: "Minor 7th",          semitones: 10, steps: 7 },
+                { id: "M7", label: "M7", name: "Major 7th",          semitones: 11, steps: 7 },
+                { id: "P8", label: "P8", name: "Perfect octave",     semitones: 12, steps: 8 }
+            ];
+
+            const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+            const LETTER_SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+            const ROOT_OCTAVE = 4;
+
+            let currentRoot = ROOTS[0];
+            let currentInterval = INTERVALS[4]; // M3
+
+
+            /*
+             * =================================================
+             * MUSIC THEORY: work out the upper note's spelling
+             * =================================================
+             */
+
+            function symbol(alter) {
+                return { "-2": "𝄫", "-1": "♭", "0": "", "1": "♯", "2": "𝄪" }[String(alter)] || "";
+            }
+
+            function noteName(note) {
+                return note.letter + symbol(note.alter);
+            }
+
+            function upperNote(root, interval) {
+
+                const rootIndex = LETTERS.indexOf(root.letter);
+                const total = rootIndex + interval.steps - 1;
+
+                const letter = LETTERS[total % 7];
+                const octave = ROOT_OCTAVE + Math.floor(total / 7);
+
+                const rootAbs =
+                    ROOT_OCTAVE * 12 + LETTER_SEMITONES[root.letter] + root.alter;
+
+                const targetAbs = rootAbs + interval.semitones;
+                const naturalAbs = octave * 12 + LETTER_SEMITONES[letter];
+
+                return {
+                    letter: letter,
+                    alter: targetAbs - naturalAbs,
+                    octave: octave
+                };
+
+            }
+
+
+            /*
+             * =================================================
+             * MUSICXML BUILDERS
+             * =================================================
+             */
+
+            const ACCIDENTAL_NAMES = {
+                "-2": "flat-flat",
+                "-1": "flat",
+                "1": "sharp",
+                "2": "double-sharp"
+            };
+
+            function noteXML(note, type, duration, isChord) {
+
+                let xml = "<note>";
+
+                if (isChord) {
+                    xml += "<chord/>";
+                }
+
+                xml += "<pitch><step>" + note.letter + "</step>";
+
+                if (note.alter !== 0) {
+                    xml += "<alter>" + note.alter + "</alter>";
+                }
+
+                xml += "<octave>" + note.octave + "</octave></pitch>";
+                xml += "<duration>" + duration + "</duration>";
+                xml += "<type>" + type + "</type>";
+
+                if (note.alter !== 0) {
+                    xml += "<accidental>" + ACCIDENTAL_NAMES[String(note.alter)] + "</accidental>";
+                }
+
+                xml += "</note>";
+
+                return xml;
+
+            }
+
+            function wrapMeasure(notesXML) {
+
+                return '<?xml version="1.0" encoding="UTF-8"?>' +
+                    '<score-partwise version="3.1">' +
+                    '<part-list><score-part id="P1"><part-name></part-name></score-part></part-list>' +
+                    '<part id="P1"><measure number="1">' +
+                    '<attributes><divisions>2</divisions>' +
+                    '<key><fifths>0</fifths></key>' +
+                    '<time><beats>4</beats><beat-type>4</beat-type></time>' +
+                    '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+                    notesXML +
+                    '</measure></part></score-partwise>';
+
+            }
+
+            // Both notes sounding together (one whole note + a chord note)
+            function buildHarmonicXML(root, interval) {
+
+                const low = { letter: root.letter, alter: root.alter, octave: ROOT_OCTAVE };
+                const high = upperNote(root, interval);
+
+                return wrapMeasure(
+                    noteXML(low, "whole", 8, false) +
+                    noteXML(high, "whole", 8, true)
+                );
+
+            }
+
+            // Root first, then the upper note (two half notes)
+            function buildMelodicXML(root, interval) {
+
+                const low = { letter: root.letter, alter: root.alter, octave: ROOT_OCTAVE };
+                const high = upperNote(root, interval);
+
+                return wrapMeasure(
+                    noteXML(low, "half", 4, false) +
+                    noteXML(high, "half", 4, false)
+                );
+
+            }
+
+
+            /*
+             * =================================================
+             * BUILD AND SHOW THE CURRENT INTERVAL
+             * =================================================
+             */
+
+            function updateInterval() {
+
+                const harmonicRendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [buildHarmonicXML(currentRoot, currentInterval)],
+                        "g.system"
+                    )[0];
+
+                const melodicRendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [buildMelodicXML(currentRoot, currentInterval)],
+                        "g.system"
+                    )[0];
+
+                showTile("harmonicTile", harmonicRendered, "Play both notes together");
+                showTile("melodicTile", melodicRendered, "Play one after the other");
+
+                const top = upperNote(currentRoot, currentInterval);
+
+                document.getElementById("intervalInfo").textContent =
+                    noteName(currentRoot) + " → " + noteName(top) + "  =  " +
+                    currentInterval.name + " (" + currentInterval.label + "), " +
+                    currentInterval.semitones +
+                    (currentInterval.semitones === 1 ? " half-step" : " half-steps");
+
+            }
+
+            function showTile(tileId, renderResult, buttonTitle) {
+
+                const tile = document.getElementById(tileId);
+
+                tile.innerHTML = renderResult.svg || "";
+
+                const toolkit = renderResult.toolkit;
+
+                if (!toolkit) {
+                    return;
+                }
+
+                const playButton = document.createElement("button");
+
+                playButton.className = "playPieceButton";
+                playButton.type = "button";
+                playButton.title = buttonTitle;
+                playButton.textContent = "▶";
+
+                playButton.addEventListener("click", function () {
+                    MusicEngine.attachHighlighting(toolkit);
+                    MusicEngine.playMIDI(toolkit);
+                });
+
+                tile.appendChild(playButton);
+
+            }
+
+
+            /*
+             * =================================================
+             * BUILD THE ROOT AND INTERVAL PICKERS
+             * =================================================
+             */
+
+            function buildRootPicker() {
+
+                const container = document.getElementById("rootPicker");
+
+                ROOTS.forEach(function (root) {
+
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "pickerButton";
+                    button.textContent = noteName(root);
+
+                    if (root === currentRoot) {
+                        button.classList.add("selected");
+                    }
+
+                    button.addEventListener("click", function () {
+
+                        currentRoot = root;
+
+                        Array.from(container.children).forEach(
+                            function (b) {
+                                b.classList.toggle("selected", b === button);
+                            }
+                        );
+
+                        updateInterval();
+
+                    });
+
+                    container.appendChild(button);
+
+                });
+
+            }
+
+            function buildIntervalPicker() {
+
+                const container = document.getElementById("intervalPicker");
+
+                INTERVALS.forEach(function (interval) {
+
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "pickerButton intervalButton";
+                    button.textContent = interval.label;
+                    button.title = interval.name;
+
+                    if (interval === currentInterval) {
+                        button.classList.add("selected");
+                    }
+
+                    button.addEventListener("click", function () {
+
+                        currentInterval = interval;
+
+                        Array.from(container.children).forEach(
+                            function (b) {
+                                b.classList.toggle("selected", b === button);
+                            }
+                        );
+
+                        updateInterval();
+
+                    });
+
+                    container.appendChild(button);
+
+                });
+
+            }
+
+
+            /*
+             * =================================================
+             * STOP
+             * =================================================
+             */
+
+            document.getElementById("stopButton")
+                .addEventListener("click", function () {
+                    MusicEngine.stopMIDI();
+                });
+
+
+            /*
+             * =================================================
+             * START
+             * =================================================
+             */
+
+            MusicEngine.ready(function () {
+
+                buildRootPicker();
+                buildIntervalPicker();
+                updateInterval();
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>
