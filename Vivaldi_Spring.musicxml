@@ -8,7 +8,7 @@
     <creator type="composer">Composer / arranger</creator>
     <encoding>
       <software>MuseScore Studio 4.7.4</software>
-      <encoding-date>2026-10-05</encoding-date>
+      <encoding-date>2026-10-12</encoding-date>
       <supports element="accidental" type="yes"/>
       <supports element="beam" type="yes"/>
       <supports element="print" attribute="new-page" type="yes" value="yes"/>
@@ -71,24 +71,24 @@
     </defaults>
   <credit page="1">
     <credit-type>title</credit-type>
-    <credit-words default-x="616.86" default-y="1514.69" justify="center" valign="top" font-size="22">La Primavera</credit-words>
+    <credit-words default-x="616.85" default-y="1510.86" justify="center" valign="top" font-size="22">La Primavera</credit-words>
     </credit>
   <credit page="1">
     <credit-type>composer</credit-type>
-    <credit-words default-x="1148" default-y="1410.86" justify="right" valign="bottom">Composer / arranger</credit-words>
+    <credit-words default-x="1148" default-y="1410.86" justify="right" valign="bottom">Antonio Vivaldi</credit-words>
     </credit>
   <part-list>
     <score-part id="P1">
-      <part-name print-object="no">Violins</part-name>
-      <part-abbreviation print-object="no">Vlns.</part-abbreviation>
+      <part-name print-object="no">Piano</part-name>
+      <part-abbreviation print-object="no">Pno.</part-abbreviation>
       <score-instrument id="P1-I1">
-        <instrument-name>Violins (section)</instrument-name>
-        <instrument-sound>strings.group</instrument-sound>
+        <instrument-name>Piano</instrument-name>
+        <instrument-sound>keyboard.piano</instrument-sound>
         </score-instrument>
       <midi-device id="P1-I1" port="1"></midi-device>
       <midi-instrument id="P1-I1">
         <midi-channel>1</midi-channel>
-        <midi-program>49</midi-program>
+        <midi-program>1</midi-program>
         <volume>78.7402</volume>
         <pan>0</pan>
         </midi-instrument>
@@ -121,7 +121,7 @@
         </attributes>
       <direction placement="above" system="only-top">
         <direction-type>
-          <metronome parentheses="no" default-x="-37.68" relative-y="20">
+          <metronome parentheses="no" default-x="-37.68" default-y="10.71" relative-y="20">
             <beat-unit>quarter</beat-unit>
             <per-minute>74</per-minute>
             </metronome>
@@ -176,7 +176,7 @@
         <stem>down</stem>
         <beam number="1">begin</beam>
         </note>
-      <note default-x="85.94" default-y="-5">
+      <note default-x="85.93" default-y="-5">
         <pitch>
           <step>E</step>
           <octave>5</octave>
@@ -223,7 +223,7 @@
         <beam number="1">begin</beam>
         <beam number="2">begin</beam>
         </note>
-      <note default-x="185.29" default-y="5">
+      <note default-x="185.28" default-y="5">
         <pitch>
           <step>G</step>
           <octave>5</octave>
@@ -273,7 +273,7 @@
         <stem>down</stem>
         <beam number="1">begin</beam>
         </note>
-      <note default-x="85.94" default-y="-5">
+      <note default-x="85.93" default-y="-5">
         <pitch>
           <step>E</step>
           <octave>5</octave>
@@ -320,7 +320,7 @@
         <beam number="1">begin</beam>
         <beam number="2">begin</beam>
         </note>
-      <note default-x="185.29" default-y="5">
+      <note default-x="185.28" default-y="5">
         <pitch>
           <step>G</step>
           <octave>5</octave>
@@ -333,7 +333,7 @@
         <beam number="2">end</beam>
         </note>
       </measure>
-    <measure number="3" width="228.78">
+    <measure number="3" width="228.77">
       <note default-x="12.5" default-y="0">
         <pitch>
           <step>F</step>
@@ -416,7 +416,7 @@
         <stem>down</stem>
         <beam number="1">continue</beam>
         </note>
-      <note default-x="174.5" default-y="-25">
+      <note default-x="174.49" default-y="-25">
         <pitch>
           <step>A</step>
           <octave>4</octave>
@@ -476,7 +476,7 @@
         <stem>down</stem>
         <beam number="1">begin</beam>
         </note>
-      <note default-x="85.94" default-y="-5">
+      <note default-x="85.93" default-y="-5">
         <pitch>
           <step>E</step>
           <octave>5</octave>
@@ -523,7 +523,7 @@
         <beam number="1">begin</beam>
         <beam number="2">begin</beam>
         </note>
-      <note default-x="185.29" default-y="5">
+      <note default-x="185.28" default-y="5">
         <pitch>
           <step>G</step>
           <octave>5</octave>
@@ -606,7 +606,7 @@
         <beam number="1">end</beam>
         <beam number="2">end</beam>
         </note>
-      <note default-x="346.47" default-y="10">
+      <note default-x="346.46" default-y="10">
         <pitch>
           <step>A</step>
           <octave>5</octave>
@@ -617,7 +617,7 @@
         <dot default-x="364.47" default-y="15"/>
         <stem>down</stem>
         </note>
-      <note default-x="460.62" default-y="10">
+      <note default-x="460.61" default-y="10">
         <pitch>
           <step>A</step>
           <octave>5</octave>
@@ -642,7 +642,7 @@
         <beam number="2">end</beam>
         </note>
       </measure>
-    <measure number="6" width="519.83">
+    <measure number="6" width="519.82">
       <note default-x="12.5" default-y="0">
         <pitch>
           <step>F</step>
@@ -679,7 +679,7 @@
         <beam number="1">end</beam>
         <beam number="2">end</beam>
         </note>
-      <note default-x="152.58" default-y="5">
+      <note default-x="152.57" default-y="5">
         <pitch>
           <step>G</step>
           <octave>5</octave>
