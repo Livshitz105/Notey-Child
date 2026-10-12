@@ -1707,6 +1707,247 @@ window.MusicEngine = (function () {
      */
 
     /*
+     * THE one list of activities, grouped by topic.
+     * To add a new activity: add one line to the right group
+     * (or add a whole new group) - every page's menu updates
+     * automatically.
+     */
+    const ACTIVITY_GROUPS = [
+        {
+            title: "Melodies & Pieces",
+            color: "#4363d8",
+            items: [
+                { file: "index.html",                 label: "\uD83C\uDFB5 Listen & Follow" },
+                { file: "index_puzzle.html",          label: "\uD83E\uDDE9 Puzzle" },
+                { file: "index_listen_choose.html",   label: "\uD83C\uDFA7 Listen & Choose" },
+                { file: "index_find_in_score.html",   label: "\uD83D\uDD0D Find It" }
+            ]
+        },
+        {
+            title: "Rhythm",
+            color: "#f58231",
+            items: [
+                { file: "index_rhythm_builder.html",  label: "\uD83C\uDFBC Build a Melody" },
+                { file: "index_rhythm_choice.html",   label: "\uD83E\uDD41 Choose a Rhythm" }
+            ]
+        },
+        {
+            title: "Chords & Intervals",
+            color: "#3cb44b",
+            items: [
+                { file: "index_chord_explore.html",    label: "\uD83D\uDD0E Chord Explorer" },
+                { file: "index_chord_choose.html",     label: "\uD83C\uDFB9 Choose a Chord" },
+                { file: "index_chord_builder.html",    label: "\uD83C\uDFD7\uFE0F Chord Builder" },
+                { file: "index_interval_builder.html", label: "\uD83D\uDCCF Interval Builder" },
+                { file: "index_interval_choose.html",  label: "\uD83D\uDC42 Name the Interval" }
+            ]
+        }
+    ];
+
+    /*
+     * Styles for the grouped menu. They are added by the engine,
+     * so the individual pages don't need any CSS changes.
+     */
+    function addNavStyles() {
+
+        if (document.getElementById("activityNavStyles")) {
+            return;
+        }
+
+        const style = document.createElement("style");
+
+        style.id = "activityNavStyles";
+
+        style.textContent =
+            ".activityNav.grouped { display: flex; flex-wrap: wrap; gap: 16px;" +
+            "  justify-content: center; align-items: stretch; }" +
+            ".navGroup { border: 3px solid #ccc; border-radius: 14px;" +
+            "  padding: 8px 14px 12px 14px; background: #fafafa; }" +
+            ".navGroupTitle { text-align: center; font-size: 14px; font-weight: 900;" +
+            "  letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }" +
+            ".navGroupLinks { display: flex; flex-wrap: wrap; gap: 8px;" +
+            "  justify-content: center; }" +
+            "@media (max-width: 600px) { .navGroup { width: 100%; box-sizing: border-box; } }";
+
+        document.head.appendChild(style);
+
+    }
+
+    /*
+     * Fills the element with id "activityNav" (default) with the
+     * grouped menu and highlights the current page. The current
+     * page is detected from the URL, so pages don't need to say
+     * which one they are. Call it right after the (empty) <nav>
+     * element: MusicEngine.buildNav();
+     */
+    function buildNav(targetElementId) {
+
+        const nav = document.getElementById(targetElementId || "activityNav");
+
+        if (!nav) {
+            return;
+        }
+
+        addNavStyles();
+
+        const currentFile =
+            window.location.pathname.split("/").pop() || "index.html";
+
+        nav.innerHTML = "";
+        nav.classList.add("grouped");
+
+        ACTIVITY_GROUPS.forEach(function (group) {
+
+            const box = document.createElement("div");
+
+            box.className = "navGroup";
+            box.style.borderColor = group.color;
+
+            const title = document.createElement("div");
+
+            title.className = "navGroupTitle";
+            title.style.color = group.color;
+            title.textContent = group.title;
+
+            const links = document.createElement("div");
+
+            links.className = "navGroupLinks";
+
+            group.items.forEach(function (activity) {
+
+                const link = document.createElement("a");
+
+                link.href = activity.file;
+                link.textContent = activity.label;
+
+                if (activity.file === currentFile) {
+                    link.className = "current";
+                }
+
+                links.appendChild(link);
+
+            });
+
+            box.appendChild(title);
+            box.appendChild(links);
+            nav.appendChild(box);
+
+        });
+
+    }
+
+
+    /*
+     * =================================================
+     * PUBLIC API
+     * =================================================
+     */
+
+    /*
+     * =================================================
+     * COMBINE SEVERAL ONE-MEASURE DOCUMENTS INTO ONE
+     * =================================================
+     */
+
+    /*
+     * Takes an array of standalone one-measure MusicXML strings
+     * (e.g. rhythm blocks a player has assembled into a sequence)
+     * and combines them into a single playable multi-measure
+     * document. Unlike makeReorderedMusicXML, these snippets don't
+     * have to come from the same original piece - each one is its
+     * own self-contained file.
+     */
+    function combineMeasures(xmlSnippetList) {
+
+        const parser = new DOMParser();
+
+        const newDoc =
+            document.implementation.createDocument(
+                null, "score-partwise", null
+            );
+
+        const root = newDoc.documentElement;
+
+        root.setAttribute("version", "3.1");
+
+        if (xmlSnippetList.length === 0) {
+            return new XMLSerializer().serializeToString(newDoc);
+        }
+
+        /*
+         * Every block is authored as its own standalone document,
+         * so every one of them carries a <part-list>. They should
+         * all agree (same instrument), so we just use the first
+         * block's.
+         */
+        const firstDoc =
+            parser.parseFromString(xmlSnippetList[0], "application/xml");
+
+        const partList = firstDoc.querySelector("part-list");
+
+        if (partList) {
+            root.appendChild(newDoc.importNode(partList, true));
+        }
+
+        const firstPart = firstDoc.querySelector("part");
+
+        const newPart = newDoc.createElement("part");
+
+        newPart.setAttribute(
+            "id",
+            firstPart ? (firstPart.getAttribute("id") || "P1") : "P1"
+        );
+
+        xmlSnippetList.forEach(function (xml, index) {
+
+            const doc = parser.parseFromString(xml, "application/xml");
+
+            const measure = doc.querySelector("part > measure");
+
+            if (!measure) {
+                return;
+            }
+
+            const imported = newDoc.importNode(measure, true);
+
+            imported.setAttribute("number", String(index + 1));
+
+            /*
+             * Each block carries its own <attributes> (clef, key,
+             * time), since it's authored as a standalone document.
+             * Once combined, only the very first measure needs to
+             * declare them - repeating the identical clef/key/time
+             * on every measure would just clutter the rendering.
+             */
+            if (index > 0) {
+
+                const attributes =
+                    imported.querySelector(":scope > attributes");
+
+                if (attributes) {
+                    imported.removeChild(attributes);
+                }
+
+            }
+
+            newPart.appendChild(imported);
+
+        });
+
+        root.appendChild(newPart);
+
+        return new XMLSerializer().serializeToString(newDoc);
+
+    }
+
+
+    /*
+     * =================================================
+     * ACTIVITY MENU (shared by every page)
+     * =================================================
+     */
+
+    /*
      * THE one list of activities. To add a new activity, add one
      * line here - every page's menu updates automatically.
      */

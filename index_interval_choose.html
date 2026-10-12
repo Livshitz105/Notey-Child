@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Notey Child — a little music reader – Name the Interval</title>
+
+    <!-- Verovio -->
+    <script
+        src="https://www.verovio.org/javascript/5.7.0/verovio-toolkit-wasm.js"
+        defer>
+    </script>
+
+    <!-- MIDI player -->
+    <script src="https://www.midijs.net/lib/midi.js"></script>
+
+    <!-- Shared engine (Verovio + MIDI logic used by every activity) -->
+    <script src="music-engine.js"></script>
+
+    <style>
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        .appTitle {
+            text-align: center;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin: 10px 0 0 0;
+        }
+
+        .appTitle span:nth-child(1) { color: #e6194b; }
+        .appTitle span:nth-child(2) { color: #f58231; }
+        .appTitle span:nth-child(3) { color: #ffcc00; }
+        .appTitle span:nth-child(4) { color: #3cb44b; }
+        .appTitle span:nth-child(5) { color: #17a2b8; }
+        .appTitle span:nth-child(6) { color: #4363d8; }
+        .appTitle span:nth-child(7) { color: #911eb4; }
+        .appTitle span:nth-child(8) { color: #e83e8c; }
+        .appTitle span:nth-child(9) { color: #fd7e14; }
+        .appTitle span:nth-child(10) { color: #20c997; }
+
+        .appSubtitle {
+            text-align: center;
+            font-size: 20px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            color: #555;
+            margin-bottom: 20px;
+        }
+
+        .activityNav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 15px 0 25px 0;
+        }
+
+        .activityNav a {
+            display: inline-block;
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .activityNav a:hover {
+            background: #e0e0e0;
+        }
+
+        .activityNav a.current {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+        button {
+            font-size: 18px;
+            padding: 8px 16px;
+            margin-right: 8px;
+            margin-bottom: 10px;
+        }
+
+        #instructions {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        h2 {
+            margin-top: 30px;
+        }
+
+        .pickerRow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pickerButton {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 10px 18px;
+            border: 3px solid #888;
+            border-radius: 8px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .pickerButton:hover {
+            border-color: #4a90d9;
+        }
+
+        .pickerButton.selected {
+            background: #4a90d9;
+            border-color: #4a90d9;
+            color: white;
+        }
+
+        #playButton {
+            background: #2e9e44;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 24px;
+            font-weight: bold;
+            padding: 14px 32px;
+            margin-top: 25px;
+        }
+
+        #playButton:hover {
+            background: #257a37;
+        }
+
+        .answerRow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            margin-top: 25px;
+        }
+
+        .answerButton {
+            font-size: 22px;
+            font-weight: bold;
+            padding: 18px 26px;
+            min-width: 210px;
+            border: 4px solid #888;
+            border-radius: 12px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .answerButton:hover:not(:disabled) {
+            border-color: #4a90d9;
+        }
+
+        .answerButton:disabled {
+            cursor: default;
+        }
+
+        .answerButton.correct {
+            background: #3cb44b;
+            border-color: #3cb44b;
+            color: white;
+        }
+
+        .answerButton.wrong {
+            background: #e6194b;
+            border-color: #e6194b;
+            color: white;
+        }
+
+        #feedback {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 22px;
+            min-height: 30px;
+        }
+
+        #feedback.good { color: #2e9e44; }
+        #feedback.bad { color: #c0392b; }
+
+        #score {
+            font-size: 20px;
+            color: #555;
+            margin-top: 10px;
+        }
+
+        #nextButton {
+            margin-top: 15px;
+            display: none;
+        }
+
+        .exploreTile {
+            position: relative;
+
+            width: 100%;
+            max-width: 700px;
+            height: 300px;
+
+            border: 4px solid #888;
+            border-radius: 12px;
+
+            background: white;
+
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            box-sizing: border-box;
+
+            overflow: hidden;
+
+            margin-top: 15px;
+
+            font-size: 20px;
+            color: #888;
+        }
+
+        .exploreTile > svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .playPieceButton {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+
+            width: 42px;
+            height: 42px;
+
+            border-radius: 50%;
+            border: none;
+
+            background: #4a90d9;
+            color: white;
+
+            font-size: 18px;
+            line-height: 42px;
+            padding: 0;
+            margin: 0;
+
+            cursor: pointer;
+        }
+
+        .playPieceButton:hover {
+            background: #3a7bc0;
+        }
+
+        /* Colored note highlighting during playback */
+        .exploreTile g.note {
+            fill: black;
+        }
+
+        .exploreTile g.note.playing {
+            fill: red;
+        }
+
+        #stopButton {
+            margin-top: 20px;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
+    <div class="appSubtitle">LITTLE MUSIC READER</div>
+
+    <nav id="activityNav" class="activityNav"></nav>
+    <script>MusicEngine.buildNav();</script>
+
+    <p id="instructions">
+        Listen to the interval - then choose its name.
+    </p>
+
+    <h2>Level</h2>
+    <div id="levelPicker" class="pickerRow"></div>
+
+    <h2>Play the notes</h2>
+    <div id="modePicker" class="pickerRow"></div>
+
+    <button id="playButton" type="button">▶ Play the interval</button>
+
+    <div id="answers" class="answerRow"></div>
+
+    <div id="feedback"></div>
+    <div id="score"></div>
+
+    <button id="nextButton" type="button">Next interval ➜</button>
+
+    <div id="revealTile" class="exploreTile">The notes will appear here after you answer.</div>
+
+    <button id="stopButton" type="button">■ Stop</button>
+
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+            /*
+             * =================================================
+             * DATA
+             * =================================================
+             */
+
+            const ROOTS = [
+                { letter: "C", alter: 0 },
+                { letter: "C", alter: 1 },
+                { letter: "D", alter: -1 },
+                { letter: "D", alter: 0 },
+                { letter: "D", alter: 1 },
+                { letter: "E", alter: -1 },
+                { letter: "E", alter: 0 },
+                { letter: "F", alter: 0 },
+                { letter: "F", alter: 1 },
+                { letter: "G", alter: -1 },
+                { letter: "G", alter: 0 },
+                { letter: "G", alter: 1 },
+                { letter: "A", alter: -1 },
+                { letter: "A", alter: 0 },
+                { letter: "A", alter: 1 },
+                { letter: "B", alter: -1 },
+                { letter: "B", alter: 0 }
+            ];
+
+            /*
+             * The augmented 4th and diminished 5th sound identical,
+             * so for LISTENING they are one answer: the "Tritone".
+             */
+            const INTERVALS = [
+                { id: "P1", name: "Perfect unison (P1)",   semitones: 0,  steps: 1 },
+                { id: "m2", name: "Minor 2nd (m2)",        semitones: 1,  steps: 2 },
+                { id: "M2", name: "Major 2nd (M2)",        semitones: 2,  steps: 2 },
+                { id: "m3", name: "Minor 3rd (m3)",        semitones: 3,  steps: 3 },
+                { id: "M3", name: "Major 3rd (M3)",        semitones: 4,  steps: 3 },
+                { id: "P4", name: "Perfect 4th (P4)",      semitones: 5,  steps: 4 },
+                { id: "TT", name: "Tritone (A4 / d5)",     semitones: 6,  steps: 4 },
+                { id: "P5", name: "Perfect 5th (P5)",      semitones: 7,  steps: 5 },
+                { id: "m6", name: "Minor 6th (m6)",        semitones: 8,  steps: 6 },
+                { id: "M6", name: "Major 6th (M6)",        semitones: 9,  steps: 6 },
+                { id: "m7", name: "Minor 7th (m7)",        semitones: 10, steps: 7 },
+                { id: "M7", name: "Major 7th (M7)",        semitones: 11, steps: 7 },
+                { id: "P8", name: "Perfect octave (P8)",   semitones: 12, steps: 8 }
+            ];
+
+            const LEVELS = [
+                {
+                    label: "Easy",
+                    ids: ["P1", "M3", "P5", "P8"]
+                },
+                {
+                    label: "Medium",
+                    ids: ["P1", "M2", "m3", "M3", "P4", "P5", "M6", "P8"]
+                },
+                {
+                    label: "All intervals",
+                    ids: INTERVALS.map(function (i) { return i.id; })
+                }
+            ];
+
+            const MODES = [
+                { id: "melodic", label: "One after the other" },
+                { id: "harmonic", label: "Together" }
+            ];
+
+            const LETTERS = ["C", "D", "E", "F", "G", "A", "B"];
+            const LETTER_SEMITONES = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+            const ROOT_OCTAVE = 4;
+
+            let currentLevel = LEVELS[0];
+            let currentMode = MODES[0];
+
+            let question = null;   // { root, interval, high, choices }
+            let answered = false;
+            let attempts = 0;
+            let correctCount = 0;
+
+
+            /*
+             * =================================================
+             * SPELLING + MUSICXML
+             * =================================================
+             */
+
+            function symbol(alter) {
+                return { "-2": "𝄫", "-1": "♭", "0": "", "1": "♯", "2": "𝄪" }[String(alter)] || "";
+            }
+
+            function noteName(note) {
+                return note.letter + symbol(note.alter);
+            }
+
+            function upperNote(root, interval) {
+
+                const rootIndex = LETTERS.indexOf(root.letter);
+                const total = rootIndex + interval.steps - 1;
+
+                const letter = LETTERS[total % 7];
+                const octave = ROOT_OCTAVE + Math.floor(total / 7);
+
+                const rootAbs =
+                    ROOT_OCTAVE * 12 + LETTER_SEMITONES[root.letter] + root.alter;
+
+                const targetAbs = rootAbs + interval.semitones;
+                const naturalAbs = octave * 12 + LETTER_SEMITONES[letter];
+
+                return {
+                    letter: letter,
+                    alter: targetAbs - naturalAbs,
+                    octave: octave
+                };
+
+            }
+
+            const ACCIDENTAL_NAMES = {
+                "-2": "flat-flat",
+                "-1": "flat",
+                "1": "sharp",
+                "2": "double-sharp"
+            };
+
+            function noteXML(note, type, duration, isChord) {
+
+                let xml = "<note>";
+
+                if (isChord) {
+                    xml += "<chord/>";
+                }
+
+                xml += "<pitch><step>" + note.letter + "</step>";
+
+                if (note.alter !== 0) {
+                    xml += "<alter>" + note.alter + "</alter>";
+                }
+
+                xml += "<octave>" + note.octave + "</octave></pitch>";
+                xml += "<duration>" + duration + "</duration>";
+                xml += "<type>" + type + "</type>";
+
+                if (note.alter !== 0) {
+                    xml += "<accidental>" + ACCIDENTAL_NAMES[String(note.alter)] + "</accidental>";
+                }
+
+                xml += "</note>";
+
+                return xml;
+
+            }
+
+            function wrapMeasure(notesXML) {
+
+                return '<?xml version="1.0" encoding="UTF-8"?>' +
+                    '<score-partwise version="3.1">' +
+                    '<part-list><score-part id="P1"><part-name></part-name></score-part></part-list>' +
+                    '<part id="P1"><measure number="1">' +
+                    '<attributes><divisions>2</divisions>' +
+                    '<key><fifths>0</fifths></key>' +
+                    '<time><beats>4</beats><beat-type>4</beat-type></time>' +
+                    '<clef><sign>G</sign><line>2</line></clef></attributes>' +
+                    notesXML +
+                    '</measure></part></score-partwise>';
+
+            }
+
+            function buildIntervalXML(q, mode) {
+
+                const low = {
+                    letter: q.root.letter,
+                    alter: q.root.alter,
+                    octave: ROOT_OCTAVE
+                };
+
+                if (mode === "harmonic") {
+                    return wrapMeasure(
+                        noteXML(low, "whole", 8, false) +
+                        noteXML(q.high, "whole", 8, true)
+                    );
+                }
+
+                return wrapMeasure(
+                    noteXML(low, "half", 4, false) +
+                    noteXML(q.high, "half", 4, false)
+                );
+
+            }
+
+
+            /*
+             * =================================================
+             * QUESTIONS
+             * =================================================
+             */
+
+            function randomItem(list) {
+                return list[Math.floor(Math.random() * list.length)];
+            }
+
+            function shuffle(list) {
+
+                const copy = list.slice();
+
+                for (let i = copy.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    const tmp = copy[i];
+                    copy[i] = copy[j];
+                    copy[j] = tmp;
+                }
+
+                return copy;
+
+            }
+
+            function newQuestion() {
+
+                const pool = INTERVALS.filter(function (i) {
+                    return currentLevel.ids.indexOf(i.id) !== -1;
+                });
+
+                // Don't repeat the previous interval twice in a row.
+                let candidates = pool;
+
+                if (question && pool.length > 1) {
+                    candidates = pool.filter(function (i) {
+                        return i.id !== question.interval.id;
+                    });
+                }
+
+                const interval = randomItem(candidates);
+
+                // Pick a root that doesn't produce double sharps/flats.
+                let root, high;
+
+                for (let tries = 0; tries < 30; tries++) {
+                    root = randomItem(ROOTS);
+                    high = upperNote(root, interval);
+                    if (Math.abs(high.alter) <= 1) {
+                        break;
+                    }
+                }
+
+                // Two wrong answers (different sound from the right one).
+                const wrong = shuffle(pool.filter(function (i) {
+                    return i.semitones !== interval.semitones;
+                })).slice(0, 2);
+
+                question = {
+                    root: root,
+                    interval: interval,
+                    high: high,
+                    choices: shuffle([interval].concat(wrong))
+                };
+
+                answered = false;
+
+            }
+
+            function playQuestion() {
+
+                if (!question) {
+                    return;
+                }
+
+                MusicEngine.stopMIDI();
+
+                MusicEngine.playMusicXML(
+                    buildIntervalXML(question, currentMode.id)
+                );
+
+            }
+
+
+            /*
+             * =================================================
+             * SCREEN
+             * =================================================
+             */
+
+            function showQuestion() {
+
+                const answersBox = document.getElementById("answers");
+
+                answersBox.innerHTML = "";
+
+                question.choices.forEach(function (interval) {
+
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "answerButton";
+                    button.textContent = interval.name;
+                    button.dataset.id = interval.id;
+
+                    button.addEventListener("click", function () {
+                        handleAnswer(interval, button);
+                    });
+
+                    answersBox.appendChild(button);
+
+                });
+
+                const feedback = document.getElementById("feedback");
+
+                feedback.textContent = "";
+                feedback.className = "";
+
+                document.getElementById("nextButton").style.display = "none";
+
+                const tile = document.getElementById("revealTile");
+
+                tile.innerHTML = "The notes will appear here after you answer.";
+
+            }
+
+            function handleAnswer(chosen, button) {
+
+                if (answered) {
+                    return;
+                }
+
+                answered = true;
+                attempts++;
+
+                const isCorrect = chosen.id === question.interval.id;
+
+                if (isCorrect) {
+                    correctCount++;
+                }
+
+                Array.from(document.getElementById("answers").children)
+                    .forEach(function (b) {
+
+                        b.disabled = true;
+
+                        if (b.dataset.id === question.interval.id) {
+                            b.classList.add("correct");
+                        } else if (b === button) {
+                            b.classList.add("wrong");
+                        }
+
+                    });
+
+                const feedback = document.getElementById("feedback");
+
+                const explanation =
+                    noteName(question.root) + " → " + noteName(question.high) +
+                    " = " + question.interval.name + ", " +
+                    question.interval.semitones +
+                    (question.interval.semitones === 1 ? " half-step" : " half-steps");
+
+                feedback.textContent =
+                    (isCorrect ? "Correct! " : "Not quite. ") + explanation;
+
+                feedback.className = isCorrect ? "good" : "bad";
+
+                updateScore();
+
+                showReveal();
+
+                document.getElementById("nextButton").style.display = "inline-block";
+
+            }
+
+            function showReveal() {
+
+                const rendered =
+                    MusicEngine.renderMiniMeasureSetWithToolkits(
+                        [buildIntervalXML(question, currentMode.id)],
+                        "g.system"
+                    )[0];
+
+                const tile = document.getElementById("revealTile");
+
+                tile.innerHTML = rendered.svg || "";
+
+                const toolkit = rendered.toolkit;
+
+                if (!toolkit) {
+                    return;
+                }
+
+                const playButton = document.createElement("button");
+
+                playButton.className = "playPieceButton";
+                playButton.type = "button";
+                playButton.title = "Play again";
+                playButton.textContent = "▶";
+
+                playButton.addEventListener("click", function () {
+                    MusicEngine.attachHighlighting(toolkit);
+                    MusicEngine.playMIDI(toolkit);
+                });
+
+                tile.appendChild(playButton);
+
+            }
+
+            function updateScore() {
+
+                document.getElementById("score").textContent =
+                    attempts === 0
+                        ? ""
+                        : "Score: " + correctCount + " / " + attempts;
+
+            }
+
+            function startNext() {
+
+                MusicEngine.stopMIDI();
+
+                newQuestion();
+                showQuestion();
+                playQuestion();
+
+            }
+
+
+            /*
+             * =================================================
+             * PICKERS (level, play mode)
+             * =================================================
+             */
+
+            function buildPicker(containerId, entries, isSelected, onPick) {
+
+                const container = document.getElementById(containerId);
+
+                entries.forEach(function (entry) {
+
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "pickerButton";
+                    button.textContent = entry.label;
+
+                    if (isSelected(entry)) {
+                        button.classList.add("selected");
+                    }
+
+                    button.addEventListener("click", function () {
+
+                        Array.from(container.children).forEach(function (b) {
+                            b.classList.toggle("selected", b === button);
+                        });
+
+                        onPick(entry);
+
+                    });
+
+                    container.appendChild(button);
+
+                });
+
+            }
+
+
+            /*
+             * =================================================
+             * BUTTONS
+             * =================================================
+             */
+
+            document.getElementById("playButton")
+                .addEventListener("click", function () {
+                    playQuestion();
+                });
+
+            document.getElementById("nextButton")
+                .addEventListener("click", startNext);
+
+            document.getElementById("stopButton")
+                .addEventListener("click", function () {
+                    MusicEngine.stopMIDI();
+                });
+
+
+            /*
+             * =================================================
+             * START
+             * =================================================
+             */
+
+            MusicEngine.ready(function () {
+
+                buildPicker(
+                    "levelPicker", LEVELS,
+                    function (l) { return l === currentLevel; },
+                    function (l) {
+                        currentLevel = l;
+                        question = null;
+                        newQuestion();
+                        showQuestion();
+                        playQuestion();
+                    }
+                );
+
+                buildPicker(
+                    "modePicker", MODES,
+                    function (m) { return m === currentMode; },
+                    function (m) {
+                        currentMode = m;
+                        if (question) {
+                            if (answered) {
+                                showReveal();
+                            }
+                            playQuestion();
+                        }
+                    }
+                );
+
+                newQuestion();
+                showQuestion();
+
+            });
+
+        });
+
+    </script>
+
+</body>
+
+</html>
