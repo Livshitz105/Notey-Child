@@ -224,17 +224,9 @@
     <h1 class="appTitle"><span>N</span><span>O</span><span>T</span><span>E</span><span>Y</span> <span>C</span><span>H</span><span>I</span><span>L</span><span>D</span></h1>
     <div class="appSubtitle">LITTLE MUSIC READER</div>
 
-    <nav class="activityNav">
-        <a href="index.html">🎵 Listen &amp; Follow</a>
-        <a href="index_puzzle.html">🧩 Puzzle</a>
-        <a href="index_listen_choose.html">🎧 Listen &amp; Choose</a>
-        <a href="index_find_in_score.html">🔍 Find It</a>
-        <a href="index_rhythm_builder.html">🎼 Build a Melody</a>
-        <a href="index_rhythm_choice.html">🥁 Choose a Rhythm</a>
-        <a href="index_chord_explore.html" class="current">🔎 Chord Explorer</a>
-        <a href="index_chord_choose.html">🎹 Choose a Chord</a>
-        <a href="index_chord_builder.html">🏗️ Chord Builder</a>
-    </nav>
+    
+    <nav id="activityNav" class="activityNav"></nav>
+    <script>MusicEngine.buildNav();</script>
 
     <label for="chordSelector">Chord:</label>
     <select id="chordSelector"></select>

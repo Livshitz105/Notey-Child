@@ -1702,6 +1702,67 @@ window.MusicEngine = (function () {
 
     /*
      * =================================================
+     * ACTIVITY MENU (shared by every page)
+     * =================================================
+     */
+
+    /*
+     * THE one list of activities. To add a new activity, add one
+     * line here - every page's menu updates automatically.
+     */
+    const ACTIVITIES = [
+        { file: "index.html",                 label: "\uD83C\uDFB5 Listen & Follow" },
+        { file: "index_puzzle.html",          label: "\uD83E\uDDE9 Puzzle" },
+        { file: "index_listen_choose.html",   label: "\uD83C\uDFA7 Listen & Choose" },
+        { file: "index_find_in_score.html",   label: "\uD83D\uDD0D Find It" },
+        { file: "index_rhythm_builder.html",  label: "\uD83C\uDFBC Build a Melody" },
+        { file: "index_rhythm_choice.html",   label: "\uD83E\uDD41 Choose a Rhythm" },
+        { file: "index_chord_explore.html",   label: "\uD83D\uDD0E Chord Explorer" },
+        { file: "index_chord_choose.html",    label: "\uD83C\uDFB9 Choose a Chord" },
+        { file: "index_chord_builder.html",   label: "\uD83C\uDFD7\uFE0F Chord Builder" },
+        { file: "index_interval_builder.html", label: "\uD83D\uDCCF Interval Builder" }
+    ];
+
+    /*
+     * Fills the element with id "activityNav" (default) with a
+     * link to every activity, and highlights the current page.
+     * The current page is detected from the URL, so pages don't
+     * need to say which one they are. Call it right after the
+     * (empty) <nav> element: MusicEngine.buildNav();
+     */
+    function buildNav(targetElementId) {
+
+        const nav = document.getElementById(targetElementId || "activityNav");
+
+        if (!nav) {
+            return;
+        }
+
+        const currentFile =
+            window.location.pathname.split("/").pop() || "index.html";
+
+        nav.innerHTML = "";
+
+        ACTIVITIES.forEach(function (activity) {
+
+            const link = document.createElement("a");
+
+            link.href = activity.file;
+            link.textContent = activity.label;
+
+            if (activity.file === currentFile) {
+                link.className = "current";
+            }
+
+            nav.appendChild(link);
+
+        });
+
+    }
+
+
+    /*
+     * =================================================
      * PUBLIC API
      * =================================================
      */
@@ -1727,7 +1788,8 @@ window.MusicEngine = (function () {
         transposePitch: transposePitch,
         buildChordXML: buildChordXML,
         buildChordBuildupXML: buildChordBuildupXML,
-        CHORD_TYPES: CHORD_TYPES
+        CHORD_TYPES: CHORD_TYPES,
+        buildNav: buildNav
     };
 
 
