@@ -130,8 +130,8 @@
             color: white;
         }
 
-        #playButton {
-            background: #2e9e44;
+        #playButton,
+        #nextButton {
             color: white;
             border: none;
             border-radius: 8px;
@@ -139,10 +139,30 @@
             font-weight: bold;
             padding: 14px 32px;
             margin-top: 25px;
+            min-width: 280px;
+            cursor: pointer;
+        }
+
+        #playButton {
+            background: #2e9e44;
         }
 
         #playButton:hover {
             background: #257a37;
+        }
+
+        #nextButton {
+            background: #f58231;
+        }
+
+        #nextButton:hover:not(:disabled) {
+            background: #d96a1a;
+        }
+
+        #nextButton:disabled {
+            background: #cfcfcf;
+            color: #888;
+            cursor: default;
         }
 
         .answerRow {
@@ -199,11 +219,6 @@
             font-size: 20px;
             color: #555;
             margin-top: 10px;
-        }
-
-        #nextButton {
-            margin-top: 15px;
-            display: none;
         }
 
         .exploreTile {
@@ -301,13 +316,12 @@
     <div id="modePicker" class="pickerRow"></div>
 
     <button id="playButton" type="button">▶ Play the interval</button>
+    <button id="nextButton" type="button" disabled>Next interval ➜</button>
 
     <div id="answers" class="answerRow"></div>
 
     <div id="feedback"></div>
     <div id="score"></div>
-
-    <button id="nextButton" type="button">Next interval ➜</button>
 
     <div id="revealTile" class="exploreTile">The notes will appear here after you answer.</div>
 
@@ -624,7 +638,7 @@
                 feedback.textContent = "";
                 feedback.className = "";
 
-                document.getElementById("nextButton").style.display = "none";
+                document.getElementById("nextButton").disabled = true;
 
                 const tile = document.getElementById("revealTile");
 
@@ -677,7 +691,7 @@
 
                 showReveal();
 
-                document.getElementById("nextButton").style.display = "inline-block";
+                document.getElementById("nextButton").disabled = false;
 
             }
 
