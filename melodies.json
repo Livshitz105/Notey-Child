@@ -72,4 +72,10 @@
        "file": "Chopin_prelude-f-dur.musicxml"  
     }
 
+    {
+        "id": "white_christmas",
+       "title": "White_Christmas",
+       "composer": "Isaiah Berlin",
+       "file": "white-christmas-jazz-cover.musicxml"  
+    }
 ]
